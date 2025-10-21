@@ -20,10 +20,27 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
   otherUserName,
   onPress
 }) => {
-  const isUnread = conversation.lastMessage && 
-    conversation.lastMessage.senderId !== currentUserId &&
-    (!conversation.readStatus[currentUserId] || 
-     conversation.readStatus[currentUserId] < conversation.lastMessage.timestamp);
+  // Check if conversation is unread
+  const isUnread = (() => {
+    if (!conversation.lastMessage) return false;
+    if (conversation.lastMessage.senderId === currentUserId) return false;
+    
+    const lastReadTimestamp = conversation.readStatus?.[currentUserId];
+    if (!lastReadTimestamp) return true;
+    
+    // Convert to timestamps for comparison
+    const lastReadTime = lastReadTimestamp instanceof Date 
+      ? lastReadTimestamp.getTime() 
+      : (typeof lastReadTimestamp === 'object' && 'toDate' in lastReadTimestamp)
+        ? lastReadTimestamp.toDate().getTime()
+        : new Date(lastReadTimestamp).getTime();
+    
+    const lastMessageTime = conversation.lastMessage.timestamp instanceof Date
+      ? conversation.lastMessage.timestamp.getTime()
+      : new Date(conversation.lastMessage.timestamp).getTime();
+    
+    return lastReadTime < lastMessageTime;
+  })();
 
   const displayName = conversation.isGroup 
     ? conversation.groupName || 'Group Chat'
