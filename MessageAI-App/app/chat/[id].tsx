@@ -16,7 +16,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { OptimisticMessage } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered } from '../../services/message.service';
-import { getConversation } from '../../services/conversation.service';
+import { getConversation, markConversationAsRead } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
 import { MessageInput } from '../../components/MessageInput';
@@ -172,28 +172,31 @@ export default function ChatScreen() {
     };
   }, [id, user]);
 
-  // Mark messages as delivered and read when conversation is opened
+  // Mark conversation as read when opened
   useEffect(() => {
-    if (!id || !user || !otherUserId) return;
+    if (!id || !user) return;
 
-    const markAsReadAndDelivered = async () => {
+    const markAsRead = async () => {
       try {
-        // Mark received messages as delivered
-        await markMessagesAsDelivered(id, user.uid);
-        
-        // Mark other user's messages as read
-        await markMessagesAsRead(id, otherUserId, user.uid);
+        // Mark conversation as read (updates conversation list)
+        await markConversationAsRead(id, user.uid);
+
+        // For DMs: also mark individual messages as read/delivered
+        if (otherUserId) {
+          await markMessagesAsDelivered(id, user.uid);
+          await markMessagesAsRead(id, otherUserId, user.uid);
+        }
       } catch (error) {
-        console.error('Error marking messages as read/delivered:', error);
+        console.error('Error marking conversation as read:', error);
       }
     };
 
     // Mark on mount
-    markAsReadAndDelivered();
+    markAsRead();
 
     // Also mark when new messages arrive (after a short delay to ensure they're visible)
     const timeoutId = setTimeout(() => {
-      markAsReadAndDelivered();
+      markAsRead();
     }, 1000);
 
     return () => clearTimeout(timeoutId);
