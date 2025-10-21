@@ -115,12 +115,21 @@ Track your progress through the 12 PRs. Check off items as you complete them!
 - [ ] Cloud Function for remote push (deferred to post-MVP)
 - [x] **Branch merged to main**
 
-### ✅ PR #11: Background Notifications (Hour 16-18) - OPTIONAL
-- [ ] Background notifications working
-- [ ] Deep linking implemented
-- [ ] Badge count working
-- [ ] Notifications cleared on open
+### 🚧 PR #11: Remote Push & Deep Linking (Hour 16-18) - IN PROGRESS
+- [x] Deep linking implemented (tap notification → opens chat)
+- [x] Badge count management (clears on open)
+- [x] Notification tap handling with navigation
+- [x] EAS build configuration added
+- [x] Firebase Cloud Functions created
+- [x] expo-dev-client installed
+- [ ] **EAS development build** (~10-15 min build time)
+- [ ] Install dev build APK on phone
+- [ ] Deploy Firebase Cloud Functions
+- [ ] Test full remote push notifications
 - [ ] **Branch merged to main**
+
+**Current Status**: Building custom development APK for full remote push support
+**Guide**: See `REMOTE_PUSH_SETUP.md` for complete instructions
 
 ---
 
@@ -221,7 +230,8 @@ When all above are checked, you have completed the MVP!
 **Target Completion**: October 22, 2025
 **Hours Remaining**: ~19 hours
 
-**Current PR**: ✅ PR #10 Complete!
+**Current PR**: 🚧 PR #11 - Remote Push & Deep Linking (IN PROGRESS)
+**Status**: Building custom development APK + Cloud Functions ready
 **Next PR**: PR #12 - Polish & Testing (Final Sprint!)
 
 ---
