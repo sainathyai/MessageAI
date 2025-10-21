@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS } from '../../utils/constants';
+import { scheduleLocalNotification } from '../../services/notification.service';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -42,6 +43,19 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleTestNotification = async () => {
+    try {
+      await scheduleLocalNotification(
+        'Test Notification 🔔',
+        'Push notifications are working!',
+        { conversationId: 'test', type: 'test' }
+      );
+      Alert.alert('Success', 'Notification sent! Check your notification center.');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to send notification. Make sure you granted permissions.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -66,6 +80,13 @@ export default function ProfileScreen() {
         {/* Actions */}
         <View style={styles.actionsSection}>
           <TouchableOpacity
+            style={styles.testButton}
+            onPress={handleTestNotification}
+          >
+            <Text style={styles.testButtonText}>🔔 Test Notification</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
             style={styles.signOutButton}
             onPress={handleSignOut}
             disabled={loading}
@@ -81,7 +102,7 @@ export default function ProfileScreen() {
         {/* Info */}
         <View style={styles.infoSection}>
           <Text style={styles.infoText}>MessageAI v1.0.0</Text>
-          <Text style={styles.infoSubtext}>PR #2: Authentication ✅</Text>
+          <Text style={styles.infoSubtext}>PR #10: Push Notifications 🔔</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -153,6 +174,18 @@ const styles = StyleSheet.create({
   },
   actionsSection: {
     marginTop: 32,
+    gap: 12,
+  },
+  testButton: {
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center',
+  },
+  testButtonText: {
+    color: COLORS.WHITE,
+    fontSize: 16,
+    fontWeight: '600',
   },
   signOutButton: {
     backgroundColor: COLORS.ERROR,

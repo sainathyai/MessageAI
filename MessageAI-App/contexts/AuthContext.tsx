@@ -12,6 +12,7 @@ import {
 import { AppState, AppStateStatus } from 'react-native';
 import { initDatabase } from '../services/storage.service';
 import { setupNetworkListener } from '../services/sync.service';
+import { registerForPushNotifications, setupNotificationListeners } from '../services/notification.service';
 
 /**
  * Authentication Context
@@ -25,7 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Initialize database and network listener on app startup
+  // Initialize database, network listener, and notifications on app startup
   useEffect(() => {
     console.log('🚀 Initializing app...');
     
@@ -39,8 +40,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Setup network listener for auto-sync
     const unsubscribeNetwork = setupNetworkListener();
 
+    // Setup notification listeners
+    const unsubscribeNotifications = setupNotificationListeners(
+      (notification) => {
+        // Handle notification received (foreground)
+        console.log('📬 Foreground notification:', notification.request.content.title);
+      },
+      (response) => {
+        // Handle notification tapped
+        console.log('👆 Notification tapped:', response.notification.request.content.data);
+        // TODO: Navigate to the relevant chat
+      }
+    );
+
     return () => {
       unsubscribeNetwork();
+      unsubscribeNotifications();
     };
   }, []);
 
@@ -51,6 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // User is signed in, get full user data from Firestore
         const userData = await getUserData(firebaseUser.uid);
         setUser(userData);
+        
+        // Register for push notifications
+        try {
+          await registerForPushNotifications(firebaseUser.uid);
+        } catch (error) {
+          console.error('Failed to register for push notifications:', error);
+        }
       } else {
         // User is signed out
         setUser(null);
