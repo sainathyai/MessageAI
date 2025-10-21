@@ -20,6 +20,8 @@ import { getConversation } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
 import { MessageInput } from '../../components/MessageInput';
+import { getMessagesFromLocal, saveMessageToLocal } from '../../services/storage.service';
+import { isOnline, queueMessageForSync } from '../../services/sync.service';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -55,21 +57,66 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!id || !user) return;
 
+    let isMounted = true;
+
+    const loadMessages = async () => {
+      try {
+        // 1. Load from SQLite cache FIRST (instant, works offline)
+        console.log('📦 Loading messages from cache...');
+        const cachedMessages = await getMessagesFromLocal(id);
+        if (isMounted && cachedMessages.length > 0) {
+          console.log(`✅ Loaded ${cachedMessages.length} cached messages`);
+          setFirestoreMessages(cachedMessages);
+          setLoading(false);
+          
+          // Auto-scroll to bottom
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: false });
+          }, 100);
+        }
+
+        // 2. Then subscribe to Firestore for real-time updates
+        console.log('🌐 Subscribing to Firestore messages...');
+        const unsubscribe = subscribeToMessages(id, async (msgs) => {
+          if (!isMounted) return;
+          
+          console.log(`📨 Received ${msgs.length} messages from Firestore`);
+          
+          // Save messages to local cache
+          for (const msg of msgs) {
+            try {
+              await saveMessageToLocal(msg as OptimisticMessage);
+            } catch (error) {
+              console.error('Error caching message:', error);
+            }
+          }
+          
+          setFirestoreMessages(msgs as OptimisticMessage[]);
+          setLoading(false);
+          
+          // Auto-scroll to bottom on new message
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        });
+
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error loading messages:', error);
+        setLoading(false);
+      }
+    };
+
     // Load conversation details
     loadConversationDetails();
 
-    // Subscribe to messages from Firestore
-    const unsubscribe = subscribeToMessages(id, (msgs) => {
-      setFirestoreMessages(msgs as OptimisticMessage[]);
-      setLoading(false);
-      
-      // Auto-scroll to bottom on new message
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    });
+    // Start loading messages
+    const unsubscribePromise = loadMessages();
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribePromise.then(unsub => unsub?.());
+    };
   }, [id, user]);
 
   const loadConversationDetails = async () => {
@@ -97,38 +144,85 @@ export default function ChatScreen() {
   const handleSendMessage = async (text: string) => {
     if (!user || !id || !text.trim()) return;
 
-    await sendMessageOptimistic(
-      id,
-      text.trim(),
-      user.uid,
-      user.displayName,
-      // On optimistic message created
-      (optimisticMsg) => {
-        setOptimisticMessages(prev => [...prev, optimisticMsg]);
-        // Auto-scroll to bottom
+    // Check if online
+    const online = await isOnline();
+
+    if (online) {
+      // Online: Send with optimistic UI
+      await sendMessageOptimistic(
+        id,
+        text.trim(),
+        user.uid,
+        user.displayName,
+        // On optimistic message created
+        (optimisticMsg) => {
+          setOptimisticMessages(prev => [...prev, optimisticMsg]);
+          // Save to local storage immediately
+          saveMessageToLocal(optimisticMsg).catch(console.error);
+          // Auto-scroll to bottom
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        },
+        // On success
+        (realId) => {
+          // Remove optimistic message (Firestore listener will add the real one)
+          setOptimisticMessages(prev => 
+            prev.filter(msg => !msg.text.includes(text.trim()))
+          );
+        },
+        // On error
+        (error) => {
+          // Update the optimistic message to failed state
+          setOptimisticMessages(prev =>
+            prev.map(msg =>
+              msg.text === text.trim() && msg.status === 'sending'
+                ? { ...msg, status: 'failed' as const, error }
+                : msg
+            )
+          );
+        }
+      );
+    } else {
+      // Offline: Queue message for later sync
+      console.log('📴 Offline, queuing message...');
+      
+      const offlineMessage: OptimisticMessage = {
+        id: `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        conversationId: id,
+        text: text.trim(),
+        senderId: user.uid,
+        senderName: user.displayName,
+        timestamp: new Date(),
+        status: 'sending',
+        type: 'text',
+        isOptimistic: false
+      };
+
+      // Add to optimistic messages for immediate display
+      setOptimisticMessages(prev => [...prev, offlineMessage]);
+
+      // Queue for sync when online
+      try {
+        await queueMessageForSync(offlineMessage);
+        console.log('✅ Message queued successfully');
+        
+        // Show as "sending" - will update when synced
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
-      },
-      // On success
-      (realId) => {
-        // Remove optimistic message (Firestore listener will add the real one)
-        setOptimisticMessages(prev => 
-          prev.filter(msg => !msg.text.includes(text.trim()))
-        );
-      },
-      // On error
-      (error) => {
-        // Update the optimistic message to failed state
+      } catch (error) {
+        console.error('Error queuing message:', error);
+        // Mark as failed
         setOptimisticMessages(prev =>
           prev.map(msg =>
-            msg.text === text.trim() && msg.status === 'sending'
-              ? { ...msg, status: 'failed' as const, error }
+            msg.id === offlineMessage.id
+              ? { ...msg, status: 'failed' as const, error: 'Failed to queue message' }
               : msg
           )
         );
       }
-    );
+    }
   };
 
   const handleRetryMessage = async (message: OptimisticMessage) => {

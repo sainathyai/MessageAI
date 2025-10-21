@@ -10,6 +10,8 @@ import {
   updateOnlineStatus
 } from '../services/auth.service';
 import { AppState, AppStateStatus } from 'react-native';
+import { initDatabase } from '../services/storage.service';
+import { setupNetworkListener } from '../services/sync.service';
 
 /**
  * Authentication Context
@@ -22,6 +24,25 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Initialize database and network listener on app startup
+  useEffect(() => {
+    console.log('🚀 Initializing app...');
+    
+    // Initialize SQLite database
+    try {
+      initDatabase();
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+    }
+
+    // Setup network listener for auto-sync
+    const unsubscribeNetwork = setupNetworkListener();
+
+    return () => {
+      unsubscribeNetwork();
+    };
+  }, []);
 
   useEffect(() => {
     // Subscribe to Firebase auth state changes
