@@ -64,8 +64,8 @@ export const subscribeToMessages = (
     const messagesRef = collection(db, COLLECTIONS.MESSAGES);
     const q = query(
       messagesRef,
-      where('conversationId', '==', conversationId),
-      orderBy('timestamp', 'asc')
+      where('conversationId', '==', conversationId)
+      // Note: orderBy removed temporarily - will be added back when index is created
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -82,6 +82,9 @@ export const subscribeToMessages = (
           type: data.type || 'text'
         };
       });
+
+      // Sort by timestamp client-side (until Firestore index is created)
+      messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
       callback(messages);
     });
