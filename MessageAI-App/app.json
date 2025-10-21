@@ -57,6 +57,12 @@
       "icon": "./assets/icon.png",
       "color": "#007AFF"
     },
-    "scheme": "messageai"
+    "scheme": "messageai",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "03d53c34-b843-4528-81d1-8549ab706b52"
+      }
+    }
   }
 }
