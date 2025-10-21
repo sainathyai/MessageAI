@@ -1,13 +1,33 @@
-import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 import { Message, Conversation, OptimisticMessage } from '../types';
 
-// Open database
-const db = SQLite.openDatabaseSync('messageai.db');
+// Only import SQLite on mobile platforms
+let SQLite: any = null;
+let db: any = null;
+
+if (Platform.OS !== 'web') {
+  SQLite = require('expo-sqlite');
+  try {
+    db = SQLite.openDatabaseSync('messageai.db');
+  } catch (error) {
+    console.error('Failed to open database:', error);
+  }
+}
+
+// Check if SQLite is available
+const isSQLiteAvailable = (): boolean => {
+  return Platform.OS !== 'web' && db !== null;
+};
 
 /**
  * Initialize SQLite database with tables
  */
 export const initDatabase = (): void => {
+  if (!isSQLiteAvailable()) {
+    console.log('⚠️  SQLite not available on this platform (web), skipping initialization');
+    return;
+  }
+
   try {
     // Create messages table
     db.execSync(`
@@ -63,6 +83,8 @@ export const initDatabase = (): void => {
  * Save a message to local storage
  */
 export const saveMessageToLocal = async (message: OptimisticMessage): Promise<void> => {
+  if (!isSQLiteAvailable()) return;
+  
   try {
     const statement = await db.prepareAsync(`
       INSERT OR REPLACE INTO messages 
@@ -94,6 +116,8 @@ export const saveMessageToLocal = async (message: OptimisticMessage): Promise<vo
  * Get messages for a conversation from local storage
  */
 export const getMessagesFromLocal = async (conversationId: string): Promise<OptimisticMessage[]> => {
+  if (!isSQLiteAvailable()) return [];
+  
   try {
     const result = await db.getAllAsync<{
       id: string;
@@ -132,6 +156,8 @@ export const getMessagesFromLocal = async (conversationId: string): Promise<Opti
  * Get unsynced (offline) messages
  */
 export const getUnsyncedMessages = async (): Promise<OptimisticMessage[]> => {
+  if (!isSQLiteAvailable()) return [];
+  
   try {
     const result = await db.getAllAsync<{
       id: string;
@@ -168,6 +194,8 @@ export const getUnsyncedMessages = async (): Promise<OptimisticMessage[]> => {
  * Mark a message as synced
  */
 export const markMessageSynced = async (messageId: string): Promise<void> => {
+  if (!isSQLiteAvailable()) return;
+  
   try {
     const statement = await db.prepareAsync(
       'UPDATE messages SET synced = 1, isOptimistic = 0 WHERE id = ?'
@@ -183,6 +211,8 @@ export const markMessageSynced = async (messageId: string): Promise<void> => {
  * Delete a message from local storage
  */
 export const deleteMessageFromLocal = async (messageId: string): Promise<void> => {
+  if (!isSQLiteAvailable()) return;
+  
   try {
     const statement = await db.prepareAsync('DELETE FROM messages WHERE id = ?');
     await statement.executeAsync([messageId]);
@@ -196,6 +226,8 @@ export const deleteMessageFromLocal = async (messageId: string): Promise<void> =
  * Save a conversation to local storage
  */
 export const saveConversationToLocal = async (conversation: Conversation): Promise<void> => {
+  if (!isSQLiteAvailable()) return;
+  
   try {
     const statement = await db.prepareAsync(`
       INSERT OR REPLACE INTO conversations 
@@ -226,6 +258,8 @@ export const saveConversationToLocal = async (conversation: Conversation): Promi
  * Get all conversations from local storage
  */
 export const getConversationsFromLocal = async (): Promise<Conversation[]> => {
+  if (!isSQLiteAvailable()) return [];
+  
   try {
     const result = await db.getAllAsync<{
       id: string;
@@ -263,6 +297,8 @@ export const getConversationsFromLocal = async (): Promise<Conversation[]> => {
  * Clear all data from local storage (for debugging)
  */
 export const clearLocalStorage = async (): Promise<void> => {
+  if (!isSQLiteAvailable()) return;
+  
   try {
     await db.execAsync('DELETE FROM messages');
     await db.execAsync('DELETE FROM conversations');
