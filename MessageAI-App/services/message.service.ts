@@ -8,10 +8,12 @@ import {
   serverTimestamp,
   Timestamp,
   getDocs,
-  limit
+  limit,
+  doc,
+  updateDoc
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { Message } from '../types';
+import { Message, OptimisticMessage } from '../types';
 import { COLLECTIONS } from '../utils/constants';
 import { updateConversationLastMessage } from './conversation.service';
 
@@ -50,6 +52,106 @@ export const sendMessage = async (
   } catch (error) {
     console.error('Error sending message:', error);
     throw new Error('Failed to send message');
+  }
+};
+
+/**
+ * Send a message with optimistic UI
+ * Returns the optimistic message immediately, then updates when server confirms
+ */
+export const sendMessageOptimistic = async (
+  conversationId: string,
+  text: string,
+  senderId: string,
+  senderName: string,
+  onOptimisticMessage: (message: OptimisticMessage) => void,
+  onSuccess: (id: string) => void,
+  onError: (error: string) => void
+): Promise<void> => {
+  // Generate temporary ID
+  const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Create optimistic message
+  const optimisticMessage: OptimisticMessage = {
+    id: tempId,
+    conversationId,
+    text,
+    senderId,
+    senderName,
+    timestamp: new Date(),
+    status: 'sending',
+    type: 'text',
+    isOptimistic: true
+  };
+  
+  // Immediately show optimistic message
+  onOptimisticMessage(optimisticMessage);
+  
+  // Send to server in background
+  try {
+    const messagesRef = collection(db, COLLECTIONS.MESSAGES);
+    
+    const messageData = {
+      conversationId,
+      text,
+      senderId,
+      senderName,
+      timestamp: serverTimestamp(),
+      status: 'sent',
+      type: 'text'
+    };
+
+    const docRef = await addDoc(messagesRef, messageData);
+
+    // Update conversation's last message
+    await updateConversationLastMessage(conversationId, {
+      text,
+      senderId,
+      timestamp: new Date()
+    });
+
+    // Notify success with real ID
+    onSuccess(docRef.id);
+  } catch (error) {
+    console.error('Error sending message:', error);
+    onError(error instanceof Error ? error.message : 'Failed to send message');
+  }
+};
+
+/**
+ * Retry sending a failed message
+ */
+export const retryMessage = async (
+  message: OptimisticMessage,
+  onSuccess: (id: string) => void,
+  onError: (error: string) => void
+): Promise<void> => {
+  try {
+    const messagesRef = collection(db, COLLECTIONS.MESSAGES);
+    
+    const messageData = {
+      conversationId: message.conversationId,
+      text: message.text,
+      senderId: message.senderId,
+      senderName: message.senderName,
+      timestamp: serverTimestamp(),
+      status: 'sent',
+      type: 'text'
+    };
+
+    const docRef = await addDoc(messagesRef, messageData);
+
+    // Update conversation's last message
+    await updateConversationLastMessage(message.conversationId, {
+      text: message.text,
+      senderId: message.senderId,
+      timestamp: new Date()
+    });
+
+    onSuccess(docRef.id);
+  } catch (error) {
+    console.error('Error retrying message:', error);
+    onError(error instanceof Error ? error.message : 'Failed to retry message');
   }
 };
 

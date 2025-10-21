@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Message } from '../types';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { OptimisticMessage } from '../types';
 import { COLORS } from '../utils/constants';
 import dayjs from 'dayjs';
 
 interface MessageBubbleProps {
-  message: Message;
+  message: OptimisticMessage;
   isOwnMessage: boolean;
 }
 
@@ -14,6 +14,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   isOwnMessage,
 }) => {
   const timeString = dayjs(message.timestamp).format('h:mm A');
+
+  // Render status indicator for own messages
+  const renderStatusIndicator = () => {
+    if (!isOwnMessage) return null;
+
+    switch (message.status) {
+      case 'sending':
+        return <ActivityIndicator size="small" color="rgba(255, 255, 255, 0.7)" style={styles.statusIndicator} />;
+      case 'sent':
+        return <Text style={styles.statusText}>✓</Text>;
+      case 'delivered':
+        return <Text style={styles.statusText}>✓✓</Text>;
+      case 'read':
+        return <Text style={[styles.statusText, styles.statusRead]}>✓✓</Text>;
+      case 'failed':
+        return <Text style={styles.statusFailed}>!</Text>;
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={[
@@ -26,7 +46,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       
       <View style={[
         styles.bubble,
-        isOwnMessage ? styles.ownBubble : styles.otherBubble
+        isOwnMessage ? styles.ownBubble : styles.otherBubble,
+        message.status === 'failed' && styles.failedBubble
       ]}>
         <Text style={[
           styles.text,
@@ -34,12 +55,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         ]}>
           {message.text}
         </Text>
-        <Text style={[
-          styles.time,
-          isOwnMessage ? styles.ownTime : styles.otherTime
-        ]}>
-          {timeString}
-        </Text>
+        <View style={styles.timeContainer}>
+          <Text style={[
+            styles.time,
+            isOwnMessage ? styles.ownTime : styles.otherTime
+          ]}>
+            {timeString}
+          </Text>
+          {renderStatusIndicator()}
+        </View>
+        {message.status === 'failed' && message.error && (
+          <Text style={styles.errorText}>{message.error}</Text>
+        )}
       </View>
     </View>
   );
@@ -75,6 +102,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.LIGHT_GRAY,
     borderBottomLeftRadius: 4,
   },
+  failedBubble: {
+    opacity: 0.7,
+    borderWidth: 1,
+    borderColor: '#FF3B30',
+  },
   text: {
     fontSize: 16,
     lineHeight: 20,
@@ -85,17 +117,42 @@ const styles = StyleSheet.create({
   otherText: {
     color: COLORS.TEXT_PRIMARY,
   },
+  timeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+    gap: 4,
+  },
   time: {
     fontSize: 11,
-    marginTop: 4,
   },
   ownTime: {
     color: 'rgba(255, 255, 255, 0.7)',
-    textAlign: 'right',
   },
   otherTime: {
     color: COLORS.TEXT_SECONDARY,
-    textAlign: 'right',
+  },
+  statusIndicator: {
+    marginLeft: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  statusRead: {
+    color: '#4FC3F7', // Light blue for read receipts
+  },
+  statusFailed: {
+    fontSize: 14,
+    color: '#FF3B30',
+    fontWeight: 'bold',
+  },
+  errorText: {
+    fontSize: 11,
+    color: '#FF3B30',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
 
