@@ -21,6 +21,12 @@ Notifications.setNotificationHandler({
  */
 export const registerForPushNotifications = async (userId: string): Promise<string | null> => {
   try {
+    // Skip on web
+    if (Platform.OS === 'web') {
+      console.log('⚠️ Push notifications not available on web');
+      return null;
+    }
+
     // Check if running on physical device
     if (!Device.isDevice) {
       console.log('⚠️ Push notifications only work on physical devices');
@@ -41,10 +47,8 @@ export const registerForPushNotifications = async (userId: string): Promise<stri
       return null;
     }
 
-    // Get Expo push token
-    const tokenData = await Notifications.getExpoPushTokenAsync({
-      projectId: 'your-project-id', // This will be overridden by app.json
-    });
+    // Get Expo push token (projectId auto-detected from app.json)
+    const tokenData = await Notifications.getExpoPushTokenAsync();
     
     const token = tokenData.data;
     console.log('📱 Push token:', token);
@@ -103,6 +107,12 @@ export const scheduleLocalNotification = async (
   data?: any
 ) => {
   try {
+    // Skip on web
+    if (Platform.OS === 'web') {
+      console.log('⚠️ Notifications not available on web');
+      return;
+    }
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title,

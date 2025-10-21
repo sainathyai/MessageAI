@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS } from '../../utils/constants';
@@ -50,9 +51,14 @@ export default function ProfileScreen() {
         'Push notifications are working!',
         { conversationId: 'test', type: 'test' }
       );
-      Alert.alert('Success', 'Notification sent! Check your notification center.');
+      
+      if (Platform.OS === 'web') {
+        Alert.alert('Info', 'Push notifications are only available on mobile devices (iOS/Android).');
+      } else {
+        Alert.alert('Success', 'Notification sent! Check your notification center.');
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to send notification. Make sure you granted permissions.');
+      Alert.alert('Error', 'Failed to send notification. Make sure you granted permissions on a physical device.');
     }
   };
 
