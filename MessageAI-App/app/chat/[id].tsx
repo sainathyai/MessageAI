@@ -20,8 +20,16 @@ import { getConversation } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
 import { MessageInput } from '../../components/MessageInput';
+import { TypingIndicator } from '../../components/TypingIndicator';
 import { getMessagesFromLocal, saveMessageToLocal } from '../../services/storage.service';
 import { isOnline, queueMessageForSync } from '../../services/sync.service';
+import {
+  subscribeToUserPresence,
+  setTypingIndicator,
+  subscribeToTypingIndicators,
+  clearTypingIndicator,
+  getLastSeenText
+} from '../../services/presence.service';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -34,6 +42,10 @@ export default function ChatScreen() {
   const [optimisticMessages, setOptimisticMessages] = useState<OptimisticMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [otherUserName, setOtherUserName] = useState('Chat');
+  const [otherUserId, setOtherUserId] = useState<string | null>(null);
+  const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
+  const [otherUserLastSeen, setOtherUserLastSeen] = useState<Date | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; userName: string }>>([]);
 
   // Merge optimistic and Firestore messages
   useEffect(() => {
@@ -119,6 +131,45 @@ export default function ChatScreen() {
     };
   }, [id, user]);
 
+  // Subscribe to other user's presence status
+  useEffect(() => {
+    if (!otherUserId) return;
+
+    const unsubscribe = subscribeToUserPresence(
+      otherUserId,
+      (isOnline, lastSeen) => {
+        setIsOtherUserOnline(isOnline);
+        setOtherUserLastSeen(lastSeen);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [otherUserId]);
+
+  // Subscribe to typing indicators
+  useEffect(() => {
+    if (!id || !user) return;
+
+    const unsubscribe = subscribeToTypingIndicators(
+      id,
+      user.uid,
+      (users) => {
+        setTypingUsers(users);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [id, user]);
+
+  // Clear typing indicator on unmount
+  useEffect(() => {
+    return () => {
+      if (id && user) {
+        clearTypingIndicator(id, user.uid);
+      }
+    };
+  }, [id, user]);
+
   const loadConversationDetails = async () => {
     if (!id || !user) return;
 
@@ -126,9 +177,10 @@ export default function ChatScreen() {
       const conversation = await getConversation(id);
       if (conversation && !conversation.isGroup) {
         // Get other user's name
-        const otherUserId = conversation.participants.find(uid => uid !== user.uid);
-        if (otherUserId) {
-          const userData = await getUserData(otherUserId);
+        const foundOtherUserId = conversation.participants.find(uid => uid !== user.uid);
+        if (foundOtherUserId) {
+          setOtherUserId(foundOtherUserId);
+          const userData = await getUserData(foundOtherUserId);
           if (userData) {
             setOtherUserName(userData.displayName);
           }
@@ -261,7 +313,13 @@ export default function ChatScreen() {
     );
   };
 
-  const renderMessage = ({ item }: { item: OptimisticMessage }) => {
+  const handleTyping = async (isTyping: boolean) => {
+    if (!id || !user) return;
+    
+    await setTypingIndicator(id, user.uid, user.displayName, isTyping);
+  };
+
+  const renderMessage = ({ item }: { item: OptimisticMessage}) => {
     const isOwnMessage = item.senderId === user?.uid;
     return (
       <TouchableOpacity
@@ -319,7 +377,22 @@ export default function ChatScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{otherUserName}</Text>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerTitle}>{otherUserName}</Text>
+            {otherUserId && (
+              <View style={styles.statusContainer}>
+                {isOtherUserOnline && (
+                  <>
+                    <View style={styles.onlineDot} />
+                    <Text style={styles.statusText}>online</Text>
+                  </>
+                )}
+                {!isOtherUserOnline && otherUserLastSeen && (
+                  <Text style={styles.statusText}>{getLastSeenText(otherUserLastSeen)}</Text>
+                )}
+              </View>
+            )}
+          </View>
           <View style={styles.backButton} />
         </View>
 
@@ -337,8 +410,11 @@ export default function ChatScreen() {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
         />
 
+        {/* Typing Indicator */}
+        <TypingIndicator typingUsers={typingUsers} />
+
         {/* Message Input */}
-        <MessageInput onSend={handleSendMessage} />
+        <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -378,10 +454,31 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: COLORS.PRIMARY,
   },
+  headerInfo: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.TEXT_PRIMARY,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  onlineDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.ONLINE,
+    marginRight: 4,
+  },
+  statusText: {
+    fontSize: 12,
+    color: COLORS.TEXT_SECONDARY,
   },
   messagesList: {
     padding: 16,

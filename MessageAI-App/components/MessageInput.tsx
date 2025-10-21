@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,20 +12,69 @@ import { COLORS } from '../utils/constants';
 
 interface MessageInputProps {
   onSend: (text: string) => void;
+  onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
   onSend,
+  onTyping,
   disabled = false,
 }) => {
   const [text, setText] = useState('');
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
+
+  // Clear typing indicator on unmount
+  useEffect(() => {
+    return () => {
+      if (onTyping && isTypingRef.current) {
+        onTyping(false);
+      }
+    };
+  }, []);
+
+  const handleTextChange = (newText: string) => {
+    setText(newText);
+
+    if (!onTyping) return;
+
+    // User is typing
+    if (newText.length > 0 && !isTypingRef.current) {
+      isTypingRef.current = true;
+      onTyping(true);
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout to clear typing indicator
+    typingTimeoutRef.current = setTimeout(() => {
+      if (isTypingRef.current) {
+        isTypingRef.current = false;
+        onTyping(false);
+      }
+    }, 3000);
+  };
 
   const handleSend = () => {
     const trimmedText = text.trim();
     if (trimmedText && !disabled) {
+      // Clear typing indicator immediately on send
+      if (onTyping && isTypingRef.current) {
+        isTypingRef.current = false;
+        onTyping(false);
+      }
+
       onSend(trimmedText);
       setText('');
+
+      // Clear timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     }
   };
 
@@ -40,7 +89,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           placeholder="Type a message..."
           placeholderTextColor={COLORS.TEXT_SECONDARY}
           value={text}
-          onChangeText={setText}
+          onChangeText={handleTextChange}
           multiline
           maxLength={1000}
           editable={!disabled}
