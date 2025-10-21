@@ -15,7 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { OptimisticMessage } from '../../types';
 import { COLORS } from '../../utils/constants';
-import { subscribeToMessages, sendMessageOptimistic, retryMessage } from '../../services/message.service';
+import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered } from '../../services/message.service';
 import { getConversation } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
@@ -169,6 +169,33 @@ export default function ChatScreen() {
       }
     };
   }, [id, user]);
+
+  // Mark messages as delivered and read when conversation is opened
+  useEffect(() => {
+    if (!id || !user || !otherUserId) return;
+
+    const markAsReadAndDelivered = async () => {
+      try {
+        // Mark received messages as delivered
+        await markMessagesAsDelivered(id, user.uid);
+        
+        // Mark other user's messages as read
+        await markMessagesAsRead(id, otherUserId, user.uid);
+      } catch (error) {
+        console.error('Error marking messages as read/delivered:', error);
+      }
+    };
+
+    // Mark on mount
+    markAsReadAndDelivered();
+
+    // Also mark when new messages arrive (after a short delay to ensure they're visible)
+    const timeoutId = setTimeout(() => {
+      markAsReadAndDelivered();
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [id, user, otherUserId, firestoreMessages.length]);
 
   const loadConversationDetails = async () => {
     if (!id || !user) return;

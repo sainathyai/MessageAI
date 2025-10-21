@@ -237,3 +237,95 @@ export const getRecentMessages = async (
   }
 };
 
+/**
+ * Mark messages as read in a conversation
+ */
+export const markMessagesAsRead = async (
+  conversationId: string,
+  userId: string,
+  currentUserId: string
+): Promise<void> => {
+  try {
+    // Update conversation's read status
+    const conversationRef = doc(db, COLLECTIONS.CONVERSATIONS, conversationId);
+    await updateDoc(conversationRef, {
+      [`readStatus.${currentUserId}`]: serverTimestamp()
+    });
+
+    // Update unread messages to 'read' status
+    const messagesRef = collection(db, COLLECTIONS.MESSAGES);
+    const q = query(
+      messagesRef,
+      where('conversationId', '==', conversationId),
+      where('senderId', '==', userId)
+    );
+
+    const querySnapshot = await getDocs(q);
+    
+    const updatePromises = querySnapshot.docs.map(docSnapshot => {
+      const data = docSnapshot.data();
+      // Only update if status is not already 'read'
+      if (data.status !== 'read') {
+        return updateDoc(doc(db, COLLECTIONS.MESSAGES, docSnapshot.id), {
+          status: 'read'
+        });
+      }
+      return Promise.resolve();
+    });
+
+    await Promise.all(updatePromises);
+    console.log(`✅ Marked messages as read in conversation ${conversationId}`);
+  } catch (error) {
+    console.error('Error marking messages as read:', error);
+  }
+};
+
+/**
+ * Update message status (delivered or read)
+ */
+export const updateMessageStatus = async (
+  messageId: string,
+  status: 'delivered' | 'read'
+): Promise<void> => {
+  try {
+    const messageRef = doc(db, COLLECTIONS.MESSAGES, messageId);
+    await updateDoc(messageRef, { status });
+  } catch (error) {
+    console.error('Error updating message status:', error);
+  }
+};
+
+/**
+ * Mark all received messages as delivered when user opens conversation
+ */
+export const markMessagesAsDelivered = async (
+  conversationId: string,
+  currentUserId: string
+): Promise<void> => {
+  try {
+    const messagesRef = collection(db, COLLECTIONS.MESSAGES);
+    const q = query(
+      messagesRef,
+      where('conversationId', '==', conversationId),
+      where('senderId', '!=', currentUserId)
+    );
+
+    const querySnapshot = await getDocs(q);
+    
+    const updatePromises = querySnapshot.docs.map(docSnapshot => {
+      const data = docSnapshot.data();
+      // Update to delivered if currently sent
+      if (data.status === 'sent') {
+        return updateDoc(doc(db, COLLECTIONS.MESSAGES, docSnapshot.id), {
+          status: 'delivered'
+        });
+      }
+      return Promise.resolve();
+    });
+
+    await Promise.all(updatePromises);
+  } catch (error) {
+    console.error('Error marking messages as delivered:', error);
+  }
+};
+
