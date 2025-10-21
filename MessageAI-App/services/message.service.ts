@@ -274,7 +274,6 @@ export const markMessagesAsRead = async (
     });
 
     await Promise.all(updatePromises);
-    console.log(`✅ Marked messages as read in conversation ${conversationId}`);
   } catch (error) {
     console.error('Error marking messages as read:', error);
   }
