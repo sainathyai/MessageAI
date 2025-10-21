@@ -73,13 +73,13 @@ Track your progress through the 12 PRs. Check off items as you complete them!
 
 ## 👤 Presence Phase
 
-### ✅ PR #7: Presence & Typing (Hour 9-11)
-- [ ] Online/offline status indicators
-- [ ] Status updates on app state change
-- [ ] Typing indicators working
-- [ ] Last seen timestamp
-- [ ] Works across devices
-- [ ] **Branch merged to main**
+### ✅ PR #7: Presence & Typing (Hour 9-11) - COMPLETE ✅
+- [x] Online/offline status indicators
+- [x] Status updates on app state change
+- [x] Typing indicators working
+- [x] Last seen timestamp
+- [x] Works across devices
+- [x] **Branch merged to main**
 
 ### ✅ PR #8: Read Receipts (Hour 11-12)
 - [ ] Read receipt tracking implemented
@@ -201,7 +201,7 @@ When all above are checked, you have completed the MVP!
 
 **Total PRs**: 12 (11 required + 1 optional)
 **Time Budget**: 24 hours
-**Current Progress**: 6 / 12 PRs merged (50% complete) 🎉
+**Current Progress**: 7 / 12 PRs merged (58% complete) 🚀
 
 ---
 
@@ -221,8 +221,8 @@ When all above are checked, you have completed the MVP!
 **Target Completion**: October 22, 2025
 **Hours Remaining**: ~19 hours
 
-**Current PR**: ✅ PR #6 Complete! (Halfway there! 🎉)
-**Next PR**: PR #7 - Presence & Typing Indicators
+**Current PR**: ✅ PR #7 Complete!
+**Next PR**: PR #8 - Read Receipts
 
 ---
 
