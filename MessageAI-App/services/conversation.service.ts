@@ -76,8 +76,8 @@ export const subscribeToConversations = (
     const conversationsRef = collection(db, COLLECTIONS.CONVERSATIONS);
     const q = query(
       conversationsRef,
-      where('participants', 'array-contains', userId),
-      orderBy('lastActivity', 'desc')
+      where('participants', 'array-contains', userId)
+      // Note: orderBy removed temporarily - will be added back when index is created
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -103,6 +103,9 @@ export const subscribeToConversations = (
           readStatus: data.readStatus || {}
         });
       }
+
+      // Sort by lastActivity client-side (until Firestore index is created)
+      conversations.sort((a, b) => b.lastActivity.getTime() - a.lastActivity.getTime());
 
       callback(conversations);
     });
