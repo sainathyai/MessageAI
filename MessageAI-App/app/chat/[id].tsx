@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -116,41 +117,47 @@ export default function ChatScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{otherUserName}</Text>
-        <View style={styles.backButton} />
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{otherUserName}</Text>
+          <View style={styles.backButton} />
+        </View>
 
-      {/* Messages List */}
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        renderItem={renderMessage}
-        contentContainerStyle={[
-          styles.messagesList,
-          messages.length === 0 && styles.emptyList
-        ]}
-        ListEmptyComponent={renderEmptyState}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-      />
+        {/* Messages List */}
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMessage}
+          contentContainerStyle={[
+            styles.messagesList,
+            messages.length === 0 && styles.emptyList
+          ]}
+          ListEmptyComponent={renderEmptyState}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        />
 
-      {/* Message Input */}
-      <MessageInput onSend={handleSendMessage} disabled={sending} />
-    </KeyboardAvoidingView>
+        {/* Message Input */}
+        <MessageInput onSend={handleSendMessage} disabled={sending} />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.WHITE,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,

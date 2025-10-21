@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     padding: 12,
+    paddingBottom: Platform.OS === 'android' ? 20 : 12,
     backgroundColor: COLORS.WHITE,
     borderTopWidth: 1,
     borderTopColor: COLORS.LIGHT_GRAY,
