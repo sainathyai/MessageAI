@@ -48,13 +48,13 @@ Track your progress through the 12 PRs. Check off items as you complete them!
 - [x] Auto-scroll to bottom
 - [x] **Branch merged to main**
 
-### ✅ PR #5: Optimistic UI (Hour 5-7)
-- [ ] Messages appear instantly when sent
-- [ ] Status indicators (sending/sent/delivered/read)
-- [ ] Updates when server confirms
-- [ ] Failed message handling
-- [ ] Retry mechanism for failures
-- [ ] **Branch merged to main**
+### ✅ PR #5: Optimistic UI (Hour 5-7) - COMPLETE ✅
+- [x] Messages appear instantly when sent
+- [x] Status indicators (sending/sent/delivered/read)
+- [x] Updates when server confirms
+- [x] Failed message handling
+- [x] Retry mechanism for failures
+- [x] **Branch merged to main**
 
 ---
 
@@ -201,7 +201,7 @@ When all above are checked, you have completed the MVP!
 
 **Total PRs**: 12 (11 required + 1 optional)
 **Time Budget**: 24 hours
-**Current Progress**: 4 / 12 PRs merged (33% complete)
+**Current Progress**: 5 / 12 PRs merged (42% complete)
 
 ---
 
@@ -221,8 +221,8 @@ When all above are checked, you have completed the MVP!
 **Target Completion**: October 22, 2025
 **Hours Remaining**: ~19 hours
 
-**Current PR**: ✅ PR #4 Complete! 
-**Next PR**: PR #5 - Optimistic UI & Status Indicators
+**Current PR**: ✅ PR #5 Complete!
+**Next PR**: PR #6 - Local Storage & Offline Support
 
 ---
 
