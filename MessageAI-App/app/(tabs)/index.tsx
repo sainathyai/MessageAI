@@ -29,6 +29,19 @@ export default function ChatsScreen() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const previousConversationsRef = useRef<Conversation[]>([]);
+  const appStateRef = useRef(AppState.currentState);
+
+  // Track app state changes
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      appStateRef.current = nextAppState;
+      console.log('📱 App state changed to:', nextAppState);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -58,14 +71,17 @@ export default function ChatsScreen() {
               }
             }
             
-            // Send notification (only if app is in background or not on this specific chat)
-            const appState = AppState.currentState;
-            if (appState !== 'active') {
+            // Send notification (only if app is in background)
+            console.log('📬 New message from:', senderName, 'App state:', appStateRef.current);
+            if (appStateRef.current !== 'active') {
+              console.log('🔔 Sending notification...');
               await scheduleLocalNotification(
                 senderName,
                 convo.lastMessage.text,
                 { conversationId: convo.id, type: 'message' }
               );
+            } else {
+              console.log('⏭️ Skipping notification (app is active)');
             }
           }
         }
