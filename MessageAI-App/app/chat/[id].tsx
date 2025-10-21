@@ -30,6 +30,7 @@ import {
   clearTypingIndicator,
   getLastSeenText
 } from '../../services/presence.service';
+import { setBadgeCount } from '../../services/notification.service';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -48,6 +49,11 @@ export default function ChatScreen() {
   const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; userName: string }>>([]);
   const [isGroup, setIsGroup] = useState(false);
   const [participantCount, setParticipantCount] = useState(0);
+
+  // Clear badge count when entering chat
+  useEffect(() => {
+    setBadgeCount(0);
+  }, []);
 
   // Merge optimistic and Firestore messages
   useEffect(() => {

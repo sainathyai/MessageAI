@@ -12,7 +12,8 @@ import {
 import { AppState, AppStateStatus } from 'react-native';
 import { initDatabase } from '../services/storage.service';
 import { setupNetworkListener } from '../services/sync.service';
-import { registerForPushNotifications, setupNotificationListeners } from '../services/notification.service';
+import { registerForPushNotifications, setupNotificationListeners, setBadgeCount } from '../services/notification.service';
+import { router } from 'expo-router';
 
 /**
  * Authentication Context
@@ -45,11 +46,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (notification) => {
         // Handle notification received (foreground)
         console.log('📬 Foreground notification:', notification.request.content.title);
+        // Clear badge when notification is received in foreground
+        setBadgeCount(0);
       },
       (response) => {
-        // Handle notification tapped
-        console.log('👆 Notification tapped:', response.notification.request.content.data);
-        // TODO: Navigate to the relevant chat
+        // Handle notification tapped - navigate to the chat
+        const data = response.notification.request.content.data;
+        console.log('👆 Notification tapped:', data);
+        
+        if (data && data.conversationId) {
+          // Navigate to the specific conversation
+          router.push(`/chat/${data.conversationId}`);
+        }
+        
+        // Clear badge count
+        setBadgeCount(0);
       }
     );
 
@@ -91,6 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (nextAppState === 'active') {
           // App came to foreground, set user online
           await updateOnlineStatus(user.uid, true);
+          // Clear badge count when app opens
+          await setBadgeCount(0);
         } else if (nextAppState === 'background' || nextAppState === 'inactive') {
           // App went to background, set user offline
           await updateOnlineStatus(user.uid, false);
