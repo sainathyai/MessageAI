@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import {
 import { getUserData } from '../../services/auth.service';
 import { ConversationItem } from '../../components/ConversationItem';
 import { UserSearch } from '../../components/UserSearch';
+import { scheduleLocalNotification } from '../../services/notification.service';
+import { AppState } from 'react-native';
 
 export default function ChatsScreen() {
   const { user } = useAuth();
@@ -26,12 +28,51 @@ export default function ChatsScreen() {
   const [loading, setLoading] = useState(true);
   const [searchVisible, setSearchVisible] = useState(false);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const previousConversationsRef = useRef<Conversation[]>([]);
 
   useEffect(() => {
     if (!user) return;
 
     // Subscribe to conversations
     const unsubscribe = subscribeToConversations(user.uid, async (convos) => {
+      // Check for new messages and trigger notifications
+      if (previousConversationsRef.current.length > 0) {
+        for (const convo of convos) {
+          const prevConvo = previousConversationsRef.current.find(c => c.id === convo.id);
+          
+          // Check if there's a new message
+          if (convo.lastMessage && 
+              convo.lastMessage.senderId !== user.uid &&
+              (!prevConvo?.lastMessage || 
+               prevConvo.lastMessage.timestamp.getTime() < convo.lastMessage.timestamp.getTime())) {
+            
+            // Get sender name
+            let senderName = 'Someone';
+            if (convo.isGroup) {
+              senderName = `${convo.groupName || 'Group'}`;
+            } else {
+              const otherUserId = convo.participants.find(id => id !== user.uid);
+              if (otherUserId) {
+                const userData = await getUserData(otherUserId);
+                senderName = userData?.displayName || 'Someone';
+              }
+            }
+            
+            // Send notification (only if app is in background or not on this specific chat)
+            const appState = AppState.currentState;
+            if (appState !== 'active') {
+              await scheduleLocalNotification(
+                senderName,
+                convo.lastMessage.text,
+                { conversationId: convo.id, type: 'message' }
+              );
+            }
+          }
+        }
+      }
+      
+      // Update previous conversations for next check
+      previousConversationsRef.current = convos;
       setConversations(convos);
       setLoading(false);
 
