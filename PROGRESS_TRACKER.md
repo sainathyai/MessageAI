@@ -6,14 +6,14 @@ Track your progress through the 12 PRs. Check off items as you complete them!
 
 ## 🏗️ Setup Phase
 
-### ✅ PR #1: Project Foundation (Hour 0-1)
-- [ ] Expo app created with TypeScript
-- [ ] Firebase SDK installed
-- [ ] Firebase project configured
-- [ ] Project structure set up
-- [ ] Types defined (User, Message, Conversation)
-- [ ] App runs without errors
-- [ ] **Branch merged to main**
+### ✅ PR #1: Project Foundation (Hour 0-1) - COMPLETE ✅
+- [x] Expo app created with TypeScript
+- [x] Firebase SDK installed
+- [x] Firebase project configured
+- [x] Project structure set up
+- [x] Types defined (User, Message, Conversation)
+- [x] App runs without errors
+- [x] **Branch merged to main**
 
 ---
 
