@@ -46,6 +46,8 @@ export default function ChatScreen() {
   const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
   const [otherUserLastSeen, setOtherUserLastSeen] = useState<Date | null>(null);
   const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; userName: string }>>([]);
+  const [isGroup, setIsGroup] = useState(false);
+  const [participantCount, setParticipantCount] = useState(0);
 
   // Merge optimistic and Firestore messages
   useEffect(() => {
@@ -204,6 +206,7 @@ export default function ChatScreen() {
       const conversation = await getConversation(id);
       if (conversation && !conversation.isGroup) {
         // Get other user's name
+        setIsGroup(false);
         const foundOtherUserId = conversation.participants.find(uid => uid !== user.uid);
         if (foundOtherUserId) {
           setOtherUserId(foundOtherUserId);
@@ -213,6 +216,8 @@ export default function ChatScreen() {
           }
         }
       } else if (conversation?.isGroup) {
+        setIsGroup(true);
+        setParticipantCount(conversation.participants.length);
         setOtherUserName(conversation.groupName || 'Group Chat');
       }
     } catch (error) {
@@ -406,7 +411,11 @@ export default function ChatScreen() {
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>{otherUserName}</Text>
-            {otherUserId && (
+            {isGroup ? (
+              <View style={styles.statusContainer}>
+                <Text style={styles.statusText}>{participantCount} members</Text>
+              </View>
+            ) : otherUserId && (
               <View style={styles.statusContainer}>
                 {isOtherUserOnline && (
                   <>

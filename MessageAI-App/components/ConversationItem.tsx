@@ -40,8 +40,8 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       {/* Avatar */}
-      <View style={[styles.avatar, { backgroundColor: COLORS.PRIMARY }]}>
-        <Text style={styles.avatarText}>{initial}</Text>
+      <View style={[styles.avatar, { backgroundColor: conversation.isGroup ? COLORS.SECONDARY : COLORS.PRIMARY }]}>
+        <Text style={styles.avatarText}>{conversation.isGroup ? '👥' : initial}</Text>
       </View>
 
       {/* Content */}

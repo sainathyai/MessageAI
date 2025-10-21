@@ -109,12 +109,20 @@ export default function ChatsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Chats</Text>
-        <TouchableOpacity
-          style={styles.newChatButton}
-          onPress={() => setSearchVisible(true)}
-        >
-          <Text style={styles.newChatButtonText}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            style={styles.groupButton}
+            onPress={() => router.push('/group/create')}
+          >
+            <Text style={styles.groupButtonText}>👥 Group</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.newChatButton}
+            onPress={() => setSearchVisible(true)}
+          >
+            <Text style={styles.newChatButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Conversation List */}
@@ -162,6 +170,22 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: COLORS.TEXT_PRIMARY,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  groupButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: COLORS.LIGHT_BLUE,
+  },
+  groupButtonText: {
+    color: COLORS.PRIMARY,
+    fontSize: 14,
+    fontWeight: '600',
   },
   newChatButton: {
     width: 40,
