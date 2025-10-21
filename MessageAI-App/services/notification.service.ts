@@ -47,11 +47,17 @@ export const registerForPushNotifications = async (userId: string): Promise<stri
       return null;
     }
 
-    // Get Expo push token (projectId auto-detected from app.json)
-    const tokenData = await Notifications.getExpoPushTokenAsync();
-    
-    const token = tokenData.data;
-    console.log('📱 Push token:', token);
+    // Get Expo push token (optional - only for remote push)
+    let token = null;
+    try {
+      const tokenData = await Notifications.getExpoPushTokenAsync();
+      token = tokenData.data;
+      console.log('📱 Push token:', token);
+    } catch (tokenError) {
+      console.log('⚠️ Could not get push token (not needed for local notifications):', tokenError.message);
+      // Continue without remote push token - local notifications will still work
+      return null;
+    }
 
     // Store token in Firestore
     const userRef = doc(db, COLLECTIONS.USERS, userId);
