@@ -93,14 +93,14 @@ Track your progress through the 12 PRs. Check off items as you complete them!
 
 ## 👥 Group Chat Phase
 
-### ✅ PR #9: Group Chat (Hour 12-14)
-- [ ] Can create group (3+ users)
-- [ ] Group name setting
-- [ ] Member list display
-- [ ] Messages show sender name
-- [ ] All participants receive messages
-- [ ] Group read receipts
-- [ ] **Branch merged to main**
+### ✅ PR #9: Group Chat (Hour 12-14) - COMPLETE ✅
+- [x] Can create group (3+ users)
+- [x] Group name setting
+- [x] Member list display (count in header)
+- [x] Messages show sender name
+- [x] All participants receive messages
+- [x] Read status works for groups and DMs
+- [x] **Branch merged to main**
 
 ---
 
@@ -221,8 +221,8 @@ When all above are checked, you have completed the MVP!
 **Target Completion**: October 22, 2025
 **Hours Remaining**: ~19 hours
 
-**Current PR**: ✅ PR #8 Complete!
-**Next PR**: PR #9 - Group Chat
+**Current PR**: ✅ PR #9 Complete!
+**Next PR**: PR #10 - Push Notifications
 
 ---
 
