@@ -81,13 +81,13 @@ Track your progress through the 12 PRs. Check off items as you complete them!
 - [x] Works across devices
 - [x] **Branch merged to main**
 
-### ✅ PR #8: Read Receipts (Hour 11-12)
-- [ ] Read receipt tracking implemented
-- [ ] Checkmarks show status (✓/✓✓/✓✓ blue)
-- [ ] Messages marked read on open
-- [ ] Real-time receipt updates
-- [ ] Works in groups (read count)
-- [ ] **Branch merged to main**
+### ✅ PR #8: Read Receipts (Hour 11-12) - COMPLETE ✅
+- [x] Read receipt tracking implemented
+- [x] Checkmarks show status (✓/✓✓/✓✓ blue)
+- [x] Messages marked read on open
+- [x] Real-time receipt updates
+- [ ] Works in groups (read count) - Deferred to PR #9
+- [x] **Branch merged to main**
 
 ---
 
@@ -221,8 +221,8 @@ When all above are checked, you have completed the MVP!
 **Target Completion**: October 22, 2025
 **Hours Remaining**: ~19 hours
 
-**Current PR**: ✅ PR #7 Complete!
-**Next PR**: PR #8 - Read Receipts
+**Current PR**: ✅ PR #8 Complete!
+**Next PR**: PR #9 - Group Chat
 
 ---
 
