@@ -2,10 +2,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Conversation } from '../types';
 import { COLORS } from '../utils/constants';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-
-dayjs.extend(relativeTime);
+import { formatConversationTime } from '../utils/dateFormat';
+import { Avatar } from './Avatar';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -47,19 +45,17 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
     : otherUserName || 'Unknown User';
 
   const lastMessageText = conversation.lastMessage?.text || 'No messages yet';
-  const timeAgo = conversation.lastMessage?.timestamp 
-    ? dayjs(conversation.lastMessage.timestamp).fromNow()
+  const timeText = conversation.lastMessage?.timestamp 
+    ? formatConversationTime(conversation.lastMessage.timestamp)
     : '';
-
-  // Get initial for avatar
-  const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       {/* Avatar */}
-      <View style={[styles.avatar, { backgroundColor: conversation.isGroup ? COLORS.SECONDARY : COLORS.PRIMARY }]}>
-        <Text style={styles.avatarText}>{conversation.isGroup ? '👥' : initial}</Text>
-      </View>
+      <Avatar 
+        name={displayName}
+        size="medium"
+      />
 
       {/* Content */}
       <View style={styles.content}>
@@ -67,7 +63,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
           <Text style={[styles.name, isUnread && styles.boldText]}>
             {displayName}
           </Text>
-          <Text style={styles.time}>{timeAgo}</Text>
+          <Text style={styles.time}>{timeText}</Text>
         </View>
         
         <Text 

@@ -20,6 +20,8 @@ import { ConversationItem } from '../../components/ConversationItem';
 import { UserSearch } from '../../components/UserSearch';
 import { scheduleLocalNotification } from '../../services/notification.service';
 import { AppState } from 'react-native';
+import { EmptyState } from '../../components/EmptyState';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 
 export default function ChatsScreen() {
   const { user } = useAuth();
@@ -145,20 +147,15 @@ export default function ChatsScreen() {
   };
 
   const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
-      <Text style={styles.emptyTitle}>No conversations yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Tap the + button to start a new chat
-      </Text>
-    </View>
+    <EmptyState
+      icon="💬"
+      title="No conversations yet"
+      message="Tap the + button above to start a new chat or create a group"
+    />
   );
 
   if (loading && conversations.length === 0) {
-    return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-      </View>
-    );
+    return <LoadingSpinner message="Loading conversations..." />;
   }
 
   return (

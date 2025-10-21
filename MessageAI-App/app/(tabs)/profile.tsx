@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS } from '../../utils/constants';
 import { scheduleLocalNotification } from '../../services/notification.service';
+import { Avatar } from '../../components/Avatar';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -67,11 +68,11 @@ export default function ProfileScreen() {
       <View style={styles.content}>
         {/* User Info */}
         <View style={styles.profileSection}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.displayName?.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          <Avatar 
+            name={user?.displayName || 'User'}
+            size="large"
+            isOnline={user?.isOnline}
+          />
           <Text style={styles.displayName}>{user?.displayName}</Text>
           <Text style={styles.email}>{user?.email}</Text>
           
@@ -107,8 +108,8 @@ export default function ProfileScreen() {
 
         {/* Info */}
         <View style={styles.infoSection}>
-          <Text style={styles.infoText}>MessageAI v1.0.0</Text>
-          <Text style={styles.infoSubtext}>PR #10: Push Notifications 🔔</Text>
+          <Text style={styles.infoText}>MessageAI v1.0.0 MVP</Text>
+          <Text style={styles.infoSubtext}>✅ All 12 PRs Complete! 🎉</Text>
         </View>
       </View>
     </SafeAreaView>
