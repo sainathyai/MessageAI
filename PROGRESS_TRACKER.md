@@ -19,34 +19,34 @@ Track your progress through the 12 PRs. Check off items as you complete them!
 
 ## 🔐 Authentication Phase
 
-### ✅ PR #2: Authentication (Hour 1-2)
-- [ ] Sign up functionality working
-- [ ] Login functionality working
-- [ ] User profile created in Firestore
-- [ ] Auth state persists on restart
-- [ ] Logout working
-- [ ] **Branch merged to main**
+### ✅ PR #2: Authentication (Hour 1-2) - COMPLETE ✅
+- [x] Sign up functionality working
+- [x] Login functionality working
+- [x] User profile created in Firestore
+- [x] Auth state persists on restart
+- [x] Logout working
+- [x] **Branch merged to main**
 
 ---
 
 ## 💬 Core Messaging Phase
 
-### ✅ PR #3: Chat List (Hour 2-3)
-- [ ] Chat list displays conversations
-- [ ] Last message preview shows
-- [ ] User search/selection working
-- [ ] Can start new conversation
-- [ ] Real-time conversation updates
-- [ ] **Branch merged to main**
+### ✅ PR #3: Chat List (Hour 2-3) - COMPLETE ✅
+- [x] Chat list displays conversations
+- [x] Last message preview shows
+- [x] User search/selection working
+- [x] Can start new conversation
+- [x] Real-time conversation updates
+- [x] **Branch merged to main**
 
-### ✅ PR #4: Chat Screen (Hour 3-5)
-- [ ] Chat screen UI complete
-- [ ] Can send text messages
-- [ ] Messages display in bubbles
-- [ ] Real-time message updates
-- [ ] Messages ordered correctly
-- [ ] Auto-scroll to bottom
-- [ ] **Branch merged to main**
+### ✅ PR #4: Chat Screen (Hour 3-5) - COMPLETE ✅
+- [x] Chat screen UI complete
+- [x] Can send text messages
+- [x] Messages display in bubbles
+- [x] Real-time message updates
+- [x] Messages ordered correctly
+- [x] Auto-scroll to bottom
+- [x] **Branch merged to main**
 
 ### ✅ PR #5: Optimistic UI (Hour 5-7)
 - [ ] Messages appear instantly when sent
@@ -201,7 +201,7 @@ When all above are checked, you have completed the MVP!
 
 **Total PRs**: 12 (11 required + 1 optional)
 **Time Budget**: 24 hours
-**Current Progress**: ___ / 12 PRs merged
+**Current Progress**: 4 / 12 PRs merged (33% complete)
 
 ---
 
@@ -217,12 +217,12 @@ When all above are checked, you have completed the MVP!
 
 ## 🚀 Current Sprint Status
 
-**Date Started**: _______________
-**Target Completion**: _______________
-**Hours Remaining**: _______________
+**Date Started**: October 21, 2025
+**Target Completion**: October 22, 2025
+**Hours Remaining**: ~19 hours
 
-**Current PR**: PR #___ - _______________
-**Next PR**: PR #___ - _______________
+**Current PR**: ✅ PR #4 Complete! 
+**Next PR**: PR #5 - Optimistic UI & Status Indicators
 
 ---
 
