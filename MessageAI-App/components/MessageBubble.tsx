@@ -1,19 +1,59 @@
-import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { OptimisticMessage } from '../types';
 import { COLORS } from '../utils/constants';
 import dayjs from 'dayjs';
+import { translateMessage } from '../services/translation.service';
+import { AIError } from '../types/ai.types';
 
 interface MessageBubbleProps {
   message: OptimisticMessage;
   isOwnMessage: boolean;
+  userPreferredLanguage?: string; // User's preferred language for translations
 }
 
 const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   message,
   isOwnMessage,
+  userPreferredLanguage = 'en',
 }) => {
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [translation, setTranslation] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
+  const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
+
   const timeString = dayjs(message.timestamp).format('h:mm A');
+
+  const handleTranslate = async () => {
+    if (showTranslation && translation) {
+      // Toggle back to original
+      setShowTranslation(false);
+      return;
+    }
+
+    if (translation) {
+      // Already translated, just show it
+      setShowTranslation(true);
+      return;
+    }
+
+    // Perform translation
+    setIsTranslating(true);
+    setTranslationError(null);
+
+    try {
+      const result = await translateMessage(message.text, userPreferredLanguage, message.id);
+      setTranslation(result.translation);
+      setDetectedLanguage(result.detectedLanguage);
+      setShowTranslation(true);
+    } catch (error) {
+      const errorMessage = (error as AIError).message || 'Translation failed';
+      setTranslationError(errorMessage);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   // Render status indicator - always render container to prevent layout shifts
   const renderStatusIndicator = () => {
@@ -55,12 +95,27 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         isOwnMessage ? styles.ownBubble : styles.otherBubble,
         message.status === 'failed' && styles.failedBubble
       ]}>
+        {/* Translation indicator */}
+        {showTranslation && detectedLanguage && (
+          <View style={styles.translationBadge}>
+            <Text style={styles.translationBadgeText}>
+              🌐 Translated from {detectedLanguage.toUpperCase()}
+            </Text>
+          </View>
+        )}
+
         <Text style={[
           styles.text,
           isOwnMessage ? styles.ownText : styles.otherText
         ]}>
-          {message.text}
+          {showTranslation && translation ? translation : message.text}
         </Text>
+
+        {/* Translation error */}
+        {translationError && (
+          <Text style={styles.translationError}>⚠️ {translationError}</Text>
+        )}
+
         <View style={styles.timeContainer}>
           <Text style={[
             styles.time,
@@ -74,6 +129,31 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
           <Text style={styles.errorText}>{message.error}</Text>
         )}
       </View>
+
+      {/* Translation button */}
+      <TouchableOpacity
+        style={[
+          styles.translateButton,
+          isOwnMessage ? styles.translateButtonOwn : styles.translateButtonOther,
+          showTranslation && styles.translateButtonActive
+        ]}
+        onPress={handleTranslate}
+        disabled={isTranslating}
+      >
+        {isTranslating ? (
+          <ActivityIndicator size="small" color={isOwnMessage ? '#007AFF' : '#666'} />
+        ) : (
+          <>
+            <Text style={styles.translateIcon}>🌐</Text>
+            <Text style={[
+              styles.translateText,
+              showTranslation && styles.translateTextActive
+            ]}>
+              {showTranslation ? 'Original' : 'Translate'}
+            </Text>
+          </>
+        )}
+      </TouchableOpacity>
     </View>
   );
 };
@@ -168,6 +248,56 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  translationBadge: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    marginBottom: 6,
+    alignSelf: 'flex-start',
+  },
+  translationBadgeText: {
+    fontSize: 10,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  translationError: {
+    fontSize: 11,
+    color: '#FF6B6B',
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
+  translateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    marginTop: 4,
+    backgroundColor: '#f0f0f0',
+    alignSelf: 'flex-start',
+  },
+  translateButtonOwn: {
+    alignSelf: 'flex-end',
+  },
+  translateButtonOther: {
+    alignSelf: 'flex-start',
+  },
+  translateButtonActive: {
+    backgroundColor: '#007AFF',
+  },
+  translateIcon: {
+    fontSize: 12,
+    marginRight: 4,
+  },
+  translateText: {
+    fontSize: 11,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  translateTextActive: {
+    color: '#fff',
   },
 });
 

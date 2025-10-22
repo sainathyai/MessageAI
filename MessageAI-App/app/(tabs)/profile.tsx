@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,64 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  ScrollView,
+  Switch,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS } from '../../utils/constants';
 import { scheduleLocalNotification } from '../../services/notification.service';
 import { Avatar } from '../../components/Avatar';
+import { LanguageSelector } from '../../components/LanguageSelector';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { isAIConfigured } from '../../services/ai.service';
+
+const AI_SETTINGS_KEY = '@ai_settings';
+
+interface AISettings {
+  preferredLanguage: string;
+  autoTranslate: boolean;
+  showCulturalHints: boolean;
+  smartRepliesEnabled: boolean;
+}
+
+const DEFAULT_AI_SETTINGS: AISettings = {
+  preferredLanguage: 'en',
+  autoTranslate: false,
+  showCulturalHints: true,
+  smartRepliesEnabled: true,
+};
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [aiSettings, setAISettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
+  const [aiConfigured, setAIConfigured] = useState(false);
+
+  // Load AI settings on mount
+  useEffect(() => {
+    loadAISettings();
+    setAIConfigured(isAIConfigured());
+  }, []);
+
+  const loadAISettings = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(AI_SETTINGS_KEY);
+      if (saved) {
+        setAISettings(JSON.parse(saved));
+      }
+    } catch (error) {
+      console.error('Failed to load AI settings:', error);
+    }
+  };
+
+  const saveAISettings = async (newSettings: AISettings) => {
+    try {
+      await AsyncStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(newSettings));
+      setAISettings(newSettings);
+    } catch (error) {
+      console.error('Failed to save AI settings:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     // On web, use window.confirm; on mobile, use Alert
@@ -80,52 +129,139 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        {/* User Info */}
-        <View style={styles.profileSection}>
-          <Avatar 
-            name={user?.displayName || 'User'}
-            size="large"
-            isOnline={user?.isOnline}
-          />
-          <Text style={styles.displayName}>{user?.displayName}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
-          
-          <View style={styles.statusBadge}>
-            <View style={[styles.statusDot, user?.isOnline && styles.statusOnline]} />
-            <Text style={styles.statusText}>
-              {user?.isOnline ? 'Online' : 'Offline'}
-            </Text>
+      <ScrollView style={styles.scrollView}>
+        <View style={styles.content}>
+          {/* User Info */}
+          <View style={styles.profileSection}>
+            <Avatar 
+              name={user?.displayName || 'User'}
+              size="large"
+              isOnline={user?.isOnline}
+            />
+            <Text style={styles.displayName}>{user?.displayName}</Text>
+            <Text style={styles.email}>{user?.email}</Text>
+            
+            <View style={styles.statusBadge}>
+              <View style={[styles.statusDot, user?.isOnline && styles.statusOnline]} />
+              <Text style={styles.statusText}>
+                {user?.isOnline ? 'Online' : 'Offline'}
+              </Text>
+            </View>
+          </View>
+
+          {/* AI Settings Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🤖 AI Features</Text>
+              {!aiConfigured && (
+                <View style={styles.warningBadge}>
+                  <Text style={styles.warningText}>⚠️ Not Configured</Text>
+                </View>
+              )}
+            </View>
+
+            {!aiConfigured ? (
+              <View style={styles.warningBox}>
+                <Text style={styles.warningBoxText}>
+                  AI features require an OpenAI API key. Add EXPO_PUBLIC_OPENAI_API_KEY to your .env file to enable translations, cultural hints, and smart replies.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.settingsContainer}>
+                <View style={styles.settingItem}>
+                  <Text style={styles.settingLabel}>Preferred Language</Text>
+                  <LanguageSelector
+                    selectedLanguage={aiSettings.preferredLanguage}
+                    onSelect={(code) => 
+                      saveAISettings({ ...aiSettings, preferredLanguage: code })
+                    }
+                    label="Translate messages to:"
+                  />
+                </View>
+
+                <View style={styles.settingItem}>
+                  <View style={styles.settingRow}>
+                    <View style={styles.settingInfo}>
+                      <Text style={styles.settingLabel}>Auto-translate messages</Text>
+                      <Text style={styles.settingDescription}>
+                        Automatically translate incoming messages
+                      </Text>
+                    </View>
+                    <Switch
+                      value={aiSettings.autoTranslate}
+                      onValueChange={(value) =>
+                        saveAISettings({ ...aiSettings, autoTranslate: value })
+                      }
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.settingItem}>
+                  <View style={styles.settingRow}>
+                    <View style={styles.settingInfo}>
+                      <Text style={styles.settingLabel}>Cultural context hints</Text>
+                      <Text style={styles.settingDescription}>
+                        Show explanations for cultural references
+                      </Text>
+                    </View>
+                    <Switch
+                      value={aiSettings.showCulturalHints}
+                      onValueChange={(value) =>
+                        saveAISettings({ ...aiSettings, showCulturalHints: value })
+                      }
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.settingItem}>
+                  <View style={styles.settingRow}>
+                    <View style={styles.settingInfo}>
+                      <Text style={styles.settingLabel}>Smart replies</Text>
+                      <Text style={styles.settingDescription}>
+                        AI-powered quick reply suggestions
+                      </Text>
+                    </View>
+                    <Switch
+                      value={aiSettings.smartRepliesEnabled}
+                      onValueChange={(value) =>
+                        saveAISettings({ ...aiSettings, smartRepliesEnabled: value })
+                      }
+                    />
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Actions */}
+          <View style={styles.actionsSection}>
+            <TouchableOpacity
+              style={styles.testButton}
+              onPress={handleTestNotification}
+            >
+              <Text style={styles.testButtonText}>🔔 Test Notification</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.signOutButton}
+              onPress={handleSignOut}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color={COLORS.WHITE} />
+              ) : (
+                <Text style={styles.signOutButtonText}>Sign Out</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Info */}
+          <View style={styles.infoSection}>
+            <Text style={styles.infoText}>MessageAI v1.0.0</Text>
+            <Text style={styles.infoSubtext}>International Communicator Edition</Text>
           </View>
         </View>
-
-        {/* Actions */}
-        <View style={styles.actionsSection}>
-          <TouchableOpacity
-            style={styles.testButton}
-            onPress={handleTestNotification}
-          >
-            <Text style={styles.testButtonText}>🔔 Test Notification</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.signOutButton}
-            onPress={handleSignOut}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color={COLORS.WHITE} />
-            ) : (
-              <Text style={styles.signOutButtonText}>Sign Out</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Info */}
-        <View style={styles.infoSection}>
-          <Text style={styles.infoText}>MessageAI v1.0.0</Text>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -135,9 +271,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.WHITE,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     flex: 1,
     padding: 24,
+    paddingBottom: 100,
   },
   profileSection: {
     alignItems: 'center',
@@ -229,11 +369,79 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 12,
     color: COLORS.GRAY,
+    textAlign: 'center',
   },
   infoSubtext: {
     fontSize: 12,
     color: COLORS.PRIMARY,
     marginTop: 4,
+    textAlign: 'center',
+  },
+  section: {
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.DARK_GRAY,
+  },
+  warningBadge: {
+    backgroundColor: '#fff3cd',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  warningText: {
+    fontSize: 11,
+    color: '#856404',
+    fontWeight: '600',
+  },
+  warningBox: {
+    backgroundColor: '#fff3cd',
+    borderRadius: 8,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: '#ffc107',
+  },
+  warningBoxText: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
+  },
+  settingsContainer: {
+    gap: 16,
+  },
+  settingItem: {
+    backgroundColor: COLORS.LIGHT_GRAY,
+    borderRadius: 12,
+    padding: 16,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.DARK_GRAY,
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 13,
+    color: COLORS.GRAY,
+    lineHeight: 18,
   },
 });
 
