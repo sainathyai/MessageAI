@@ -9,19 +9,25 @@ import {
   Platform,
 } from 'react-native';
 import { COLORS } from '../utils/constants';
+import { FormalityAdjustmentModal } from './FormalityAdjustmentModal';
+import { adjustFormality } from '../services/context.service';
+import { FormalityLevel } from '../types/ai.types';
 
 interface MessageInputProps {
   onSend: (text: string) => void;
   onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
+  showFormalityButton?: boolean;
 }
 
 export const MessageInput: React.FC<MessageInputProps> = ({
   onSend,
   onTyping,
   disabled = false,
+  showFormalityButton = true,
 }) => {
   const [text, setText] = useState('');
+  const [showFormalityModal, setShowFormalityModal] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
 
@@ -78,36 +84,79 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
+  const handleFormalityAdjust = async (text: string, level: FormalityLevel): Promise<string> => {
+    const result = await adjustFormality(text, level);
+    return result.adjusted;
+  };
+
+  const handleApplyFormality = (adjustedText: string, level: FormalityLevel) => {
+    setText(adjustedText);
+    setShowFormalityModal(false);
+  };
+
+  const handleOpenFormality = () => {
+    const trimmedText = text.trim();
+    if (trimmedText) {
+      setShowFormalityModal(true);
+    }
+  };
+
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
-      <View style={styles.container}>
-        <TextInput
-          style={styles.input}
-          placeholder="Type a message..."
-          placeholderTextColor={COLORS.TEXT_SECONDARY}
-          value={text}
-          onChangeText={handleTextChange}
-          multiline
-          maxLength={1000}
-          editable={!disabled}
-          onSubmitEditing={handleSend}
-          blurOnSubmit={false}
-        />
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            (!text.trim() || disabled) && styles.sendButtonDisabled
-          ]}
-          onPress={handleSend}
-          disabled={!text.trim() || disabled}
-        >
-          <Text style={styles.sendButtonText}>➤</Text>
-        </TouchableOpacity>
-      </View>
-    </KeyboardAvoidingView>
+    <>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <View style={styles.container}>
+          {/* Formality Button */}
+          {showFormalityButton && (
+            <TouchableOpacity
+              style={[
+                styles.formalityButton,
+                !text.trim() && styles.formalityButtonDisabled
+              ]}
+              onPress={handleOpenFormality}
+              disabled={!text.trim()}
+            >
+              <Text style={styles.formalityButtonText}>📝</Text>
+            </TouchableOpacity>
+          )}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            placeholderTextColor={COLORS.TEXT_SECONDARY}
+            value={text}
+            onChangeText={handleTextChange}
+            multiline
+            maxLength={1000}
+            editable={!disabled}
+            onSubmitEditing={handleSend}
+            blurOnSubmit={false}
+          />
+          
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              (!text.trim() || disabled) && styles.sendButtonDisabled
+            ]}
+            onPress={handleSend}
+            disabled={!text.trim() || disabled}
+          >
+            <Text style={styles.sendButtonText}>➤</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+
+      {/* Formality Adjustment Modal */}
+      <FormalityAdjustmentModal
+        visible={showFormalityModal}
+        onClose={() => setShowFormalityModal(false)}
+        originalText={text}
+        onApply={handleApplyFormality}
+        onAdjust={handleFormalityAdjust}
+      />
+    </>
   );
 };
 
@@ -145,6 +194,21 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     color: COLORS.WHITE,
+    fontSize: 20,
+  },
+  formalityButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  formalityButtonDisabled: {
+    opacity: 0.4,
+  },
+  formalityButtonText: {
     fontSize: 20,
   },
 });
