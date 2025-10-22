@@ -15,12 +15,13 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { OptimisticMessage } from '../../types';
 import { COLORS } from '../../utils/constants';
-import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered } from '../../services/message.service';
-import { getConversation, markConversationAsRead } from '../../services/conversation.service';
+import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered, triggerPushNotification } from '../../services/message.service';
+import { getConversation, markConversationAsRead, getOrCreateConversation } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
 import { MessageInput } from '../../components/MessageInput';
 import { TypingIndicator } from '../../components/TypingIndicator';
+import { GroupMembersModal } from '../../components/GroupMembersModal';
 import { getMessagesFromLocal, saveMessageToLocal, getUserFromCache, saveUserToCache } from '../../services/storage.service';
 import { isOnline, queueMessageForSync } from '../../services/sync.service';
 import {
@@ -49,6 +50,8 @@ export default function ChatScreen() {
   const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; userName: string }>>([]);
   const [isGroup, setIsGroup] = useState(false);
   const [participantCount, setParticipantCount] = useState(0);
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [showGroupMembers, setShowGroupMembers] = useState(false);
 
   // Clear badge count when entering chat
   useEffect(() => {
@@ -257,6 +260,7 @@ export default function ChatScreen() {
       } else if (conversation?.isGroup) {
         setIsGroup(true);
         setParticipantCount(conversation.participants.length);
+        setParticipantIds(conversation.participants);
         setOtherUserName(conversation.groupName || 'Group Chat');
       }
     } catch (error) {
@@ -289,6 +293,11 @@ export default function ChatScreen() {
           setOptimisticMessages(prev => 
             prev.filter(msg => !msg.text.includes(text.trim()))
           );
+          
+          // Trigger push notification via AWS Lambda
+          triggerPushNotification(id, user.uid, user.displayName, text.trim()).catch(error => {
+            console.error('Push notification trigger failed:', error);
+          });
         },
         // On error
         (error) => {
@@ -381,6 +390,17 @@ export default function ChatScreen() {
     await setTypingIndicator(id, user.uid, user.displayName, isTyping);
   };
 
+  const handleMemberPress = async (memberId: string) => {
+    if (!user) return;
+    try {
+      const conversationId = await getOrCreateConversation(user.uid, memberId);
+      router.push(`/chat/${conversationId}`);
+    } catch (error) {
+      console.error('Error creating conversation with member:', error);
+      Alert.alert('Error', 'Could not start conversation with this member');
+    }
+  };
+
   const renderMessage = ({ item }: { item: OptimisticMessage}) => {
     const isOwnMessage = item.senderId === user?.uid;
     return (
@@ -459,7 +479,16 @@ export default function ChatScreen() {
               </View>
             )}
           </View>
-          <View style={styles.backButton} />
+          {isGroup ? (
+            <TouchableOpacity 
+              onPress={() => setShowGroupMembers(true)} 
+              style={styles.groupInfoButton}
+            >
+              <Text style={styles.groupInfoIcon}>👥</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.backButton} />
+          )}
         </View>
 
         {/* Messages List */}
@@ -491,6 +520,15 @@ export default function ChatScreen() {
         {/* Message Input */}
         <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
       </KeyboardAvoidingView>
+
+      {/* Group Members Modal */}
+      <GroupMembersModal
+        visible={showGroupMembers}
+        onClose={() => setShowGroupMembers(false)}
+        participantIds={participantIds}
+        currentUserId={user?.uid || ''}
+        onMemberPress={handleMemberPress}
+      />
     </SafeAreaView>
   );
 }
@@ -555,6 +593,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.WHITE,
     opacity: 0.9,
+  },
+  groupInfoButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  groupInfoIcon: {
+    fontSize: 20,
   },
   messagesList: {
     padding: 16,
