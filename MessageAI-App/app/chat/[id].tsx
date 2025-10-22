@@ -21,6 +21,7 @@ import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
 import { MessageInput } from '../../components/MessageInput';
 import { TypingIndicator } from '../../components/TypingIndicator';
+import { GroupMembersModal } from '../../components/GroupMembersModal';
 import { getMessagesFromLocal, saveMessageToLocal, getUserFromCache, saveUserToCache } from '../../services/storage.service';
 import { isOnline, queueMessageForSync } from '../../services/sync.service';
 import {
@@ -51,6 +52,8 @@ export default function ChatScreen() {
   const [typingUsers, setTypingUsers] = useState<Array<{ userId: string; userName: string }>>([]);
   const [isGroup, setIsGroup] = useState(false);
   const [participantCount, setParticipantCount] = useState(0);
+  const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [showGroupMembers, setShowGroupMembers] = useState(false);
 
   // Clear badge count when entering chat
   useEffect(() => {
@@ -259,10 +262,26 @@ export default function ChatScreen() {
       } else if (conversation?.isGroup) {
         setIsGroup(true);
         setParticipantCount(conversation.participants.length);
+        setParticipantIds(conversation.participants);
         setOtherUserName(conversation.groupName || 'Group Chat');
       }
     } catch (error) {
       console.error('Error loading conversation:', error);
+    }
+  };
+
+  const handleMemberPress = async (userId: string) => {
+    // Navigate to 1-on-1 chat with the selected member
+    if (!user) return;
+    
+    try {
+      // Import getOrCreateConversation
+      const { getOrCreateConversation } = await import('../../services/conversation.service');
+      const conversationId = await getOrCreateConversation(user.uid, userId);
+      setShowGroupMembers(false);
+      router.push(`/chat/${conversationId}`);
+    } catch (error) {
+      console.error('Error creating conversation:', error);
     }
   };
 
@@ -449,9 +468,13 @@ export default function ChatScreen() {
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>{otherUserName}</Text>
             {isGroup ? (
-              <View style={styles.statusContainer}>
+              <TouchableOpacity 
+                style={styles.statusContainer}
+                onPress={() => setShowGroupMembers(true)}
+              >
                 <Text style={styles.statusText}>{participantCount} members</Text>
-              </View>
+                <Text style={styles.statusText}> 👥</Text>
+              </TouchableOpacity>
             ) : otherUserId && (
               <View style={styles.statusContainer}>
                 {isOtherUserOnline && (
@@ -466,7 +489,16 @@ export default function ChatScreen() {
               </View>
             )}
           </View>
-          <View style={styles.backButton} />
+          {isGroup ? (
+            <TouchableOpacity
+              style={styles.groupInfoButton}
+              onPress={() => setShowGroupMembers(true)}
+            >
+              <Text style={styles.groupInfoIcon}>👥</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.backButton} />
+          )}
         </View>
 
         {/* Messages List */}
@@ -498,6 +530,15 @@ export default function ChatScreen() {
         {/* Message Input */}
         <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
       </KeyboardAvoidingView>
+
+      {/* Group Members Modal */}
+      <GroupMembersModal
+        visible={showGroupMembers}
+        onClose={() => setShowGroupMembers(false)}
+        participantIds={participantIds}
+        currentUserId={user?.uid || ''}
+        onMemberPress={handleMemberPress}
+      />
     </SafeAreaView>
   );
 }
@@ -586,6 +627,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
+  },
+  groupInfoButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  groupInfoIcon: {
+    fontSize: 24,
   },
 });
 
