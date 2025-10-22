@@ -16,56 +16,19 @@ import { COLORS } from '../../utils/constants';
 import { scheduleLocalNotification } from '../../services/notification.service';
 import { Avatar } from '../../components/Avatar';
 import { LanguageSelector } from '../../components/LanguageSelector';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isAIConfigured } from '../../services/ai.service';
-
-const AI_SETTINGS_KEY = '@ai_settings';
-
-interface AISettings {
-  preferredLanguage: string;
-  autoTranslate: boolean;
-  showCulturalHints: boolean;
-  smartRepliesEnabled: boolean;
-}
-
-const DEFAULT_AI_SETTINGS: AISettings = {
-  preferredLanguage: 'en',
-  autoTranslate: false,
-  showCulturalHints: true,
-  smartRepliesEnabled: true,
-};
+import { useAISettings } from '../../hooks/useAISettings';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [aiSettings, setAISettings] = useState<AISettings>(DEFAULT_AI_SETTINGS);
+  const { settings: aiSettings, updateSettings } = useAISettings();
   const [aiConfigured, setAIConfigured] = useState(false);
 
-  // Load AI settings on mount
+  // Check AI configuration on mount
   useEffect(() => {
-    loadAISettings();
     setAIConfigured(isAIConfigured());
   }, []);
-
-  const loadAISettings = async () => {
-    try {
-      const saved = await AsyncStorage.getItem(AI_SETTINGS_KEY);
-      if (saved) {
-        setAISettings(JSON.parse(saved));
-      }
-    } catch (error) {
-      console.error('Failed to load AI settings:', error);
-    }
-  };
-
-  const saveAISettings = async (newSettings: AISettings) => {
-    try {
-      await AsyncStorage.setItem(AI_SETTINGS_KEY, JSON.stringify(newSettings));
-      setAISettings(newSettings);
-    } catch (error) {
-      console.error('Failed to save AI settings:', error);
-    }
-  };
 
   const handleSignOut = async () => {
     // On web, use window.confirm; on mobile, use Alert
@@ -173,7 +136,7 @@ export default function ProfileScreen() {
                   <LanguageSelector
                     selectedLanguage={aiSettings.preferredLanguage}
                     onSelect={(code) => 
-                      saveAISettings({ ...aiSettings, preferredLanguage: code })
+                      updateSettings({ preferredLanguage: code })
                     }
                     label="Translate messages to:"
                   />
@@ -190,7 +153,7 @@ export default function ProfileScreen() {
                     <Switch
                       value={aiSettings.autoTranslate}
                       onValueChange={(value) =>
-                        saveAISettings({ ...aiSettings, autoTranslate: value })
+                        updateSettings({ autoTranslate: value })
                       }
                     />
                   </View>
@@ -207,7 +170,7 @@ export default function ProfileScreen() {
                     <Switch
                       value={aiSettings.showCulturalHints}
                       onValueChange={(value) =>
-                        saveAISettings({ ...aiSettings, showCulturalHints: value })
+                        updateSettings({ showCulturalHints: value })
                       }
                     />
                   </View>
@@ -224,7 +187,7 @@ export default function ProfileScreen() {
                     <Switch
                       value={aiSettings.smartRepliesEnabled}
                       onValueChange={(value) =>
-                        saveAISettings({ ...aiSettings, smartRepliesEnabled: value })
+                        updateSettings({ smartRepliesEnabled: value })
                       }
                     />
                   </View>

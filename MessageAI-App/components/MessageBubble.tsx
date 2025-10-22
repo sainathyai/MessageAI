@@ -1,29 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { OptimisticMessage } from '../types';
 import { COLORS } from '../utils/constants';
 import dayjs from 'dayjs';
-import { translateMessage } from '../services/translation.service';
+import { translateMessage, detectLanguage } from '../services/translation.service';
 import { AIError } from '../types/ai.types';
 
 interface MessageBubbleProps {
   message: OptimisticMessage;
   isOwnMessage: boolean;
   userPreferredLanguage?: string; // User's preferred language for translations
+  autoTranslate?: boolean; // Auto-translate incoming messages
 }
 
 const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   message,
   isOwnMessage,
   userPreferredLanguage = 'en',
+  autoTranslate = false,
 }) => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationError, setTranslationError] = useState<string | null>(null);
   const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
+  const [autoTranslateAttempted, setAutoTranslateAttempted] = useState(false);
+  const messageIdRef = useRef(message.id);
 
   const timeString = dayjs(message.timestamp).format('h:mm A');
+
+  // Auto-translate effect
+  useEffect(() => {
+    // Only auto-translate if:
+    // 1. Auto-translate is enabled
+    // 2. Message is from someone else (not own message)
+    // 3. Haven't already attempted auto-translate for this message
+    // 4. Message is not empty
+    if (
+      autoTranslate && 
+      !isOwnMessage && 
+      !autoTranslateAttempted && 
+      message.text.trim().length > 0 &&
+      messageIdRef.current === message.id // Ensure we're still on the same message
+    ) {
+      performAutoTranslate();
+    }
+  }, [autoTranslate, isOwnMessage, message.id, message.text]);
+
+  const performAutoTranslate = async () => {
+    setAutoTranslateAttempted(true);
+    setIsTranslating(true);
+    setTranslationError(null);
+
+    try {
+      // First, detect the language of the message
+      const detected = await detectLanguage(message.text);
+      setDetectedLanguage(detected);
+
+      // Only translate if the detected language is different from user's preferred language
+      if (detected !== userPreferredLanguage && detected !== 'unknown') {
+        const result = await translateMessage(message.text, userPreferredLanguage, message.id);
+        setTranslation(result.translation);
+        setDetectedLanguage(result.detectedLanguage);
+        setShowTranslation(true); // Show translation by default
+      }
+    } catch (error) {
+      // Silently fail for auto-translate (user can manually translate if needed)
+      console.log('Auto-translate failed:', error);
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   const handleTranslate = async () => {
     if (showTranslation && translation) {

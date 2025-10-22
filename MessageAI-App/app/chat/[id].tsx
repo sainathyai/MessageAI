@@ -31,12 +31,14 @@ import {
   getLastSeenText
 } from '../../services/presence.service';
 import { setBadgeCount } from '../../services/notification.service';
+import { useAISettings } from '../../hooks/useAISettings';
 
 export default function ChatScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const flatListRef = useRef<FlatList>(null);
+  const { settings: aiSettings } = useAISettings();
 
   const [messages, setMessages] = useState<OptimisticMessage[]>([]);
   const [firestoreMessages, setFirestoreMessages] = useState<OptimisticMessage[]>([]);
@@ -398,7 +400,12 @@ export default function ChatScreen() {
         }}
         activeOpacity={item.status === 'failed' ? 0.7 : 1}
       >
-        <MessageBubble message={item} isOwnMessage={isOwnMessage} />
+        <MessageBubble 
+          message={item} 
+          isOwnMessage={isOwnMessage}
+          userPreferredLanguage={aiSettings.preferredLanguage}
+          autoTranslate={aiSettings.autoTranslate}
+        />
       </TouchableOpacity>
     );
   };
