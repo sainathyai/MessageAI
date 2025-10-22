@@ -5,8 +5,10 @@ import { COLORS } from '../utils/constants';
 import dayjs from 'dayjs';
 import { translateMessage, detectLanguage } from '../services/translation.service';
 import { analyzeCulturalContext } from '../services/context.service';
-import { AIError, CulturalContext } from '../types/ai.types';
+import { detectSlangAndIdioms } from '../services/slang.service';
+import { AIError, CulturalContext, SlangTerm } from '../types/ai.types';
 import { CulturalContextModal } from './CulturalContextModal';
+import SlangExplanationModal from './SlangExplanationModal';
 
 interface MessageBubbleProps {
   message: OptimisticMessage;
@@ -36,6 +38,12 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   const [culturalContext, setCulturalContext] = useState<CulturalContext | null>(null);
   const [isAnalyzingContext, setIsAnalyzingContext] = useState(false);
   const [contextError, setContextError] = useState<string | null>(null);
+
+  // Slang and idiom state
+  const [showSlangModal, setShowSlangModal] = useState(false);
+  const [slangTerms, setSlangTerms] = useState<SlangTerm[]>([]);
+  const [isDetectingSlang, setIsDetectingSlang] = useState(false);
+  const [slangError, setSlangError] = useState<string | null>(null);
 
   const timeString = dayjs(message.timestamp).format('h:mm A');
 
@@ -132,6 +140,29 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
       setContextError(errorMessage);
     } finally {
       setIsAnalyzingContext(false);
+    }
+  };
+
+  const handleSlangDetection = async () => {
+    setShowSlangModal(true);
+    
+    // If we already have slang terms, just show them
+    if (slangTerms.length > 0 && !slangError) {
+      return;
+    }
+
+    // Otherwise, detect
+    setIsDetectingSlang(true);
+    setSlangError(null);
+
+    try {
+      const terms = await detectSlangAndIdioms(message.text, detectedLanguage || 'en');
+      setSlangTerms(terms);
+    } catch (error) {
+      const errorMessage = (error as AIError).message || 'Failed to detect slang and idioms';
+      setSlangError(errorMessage);
+    } finally {
+      setIsDetectingSlang(false);
     }
   };
 
@@ -246,6 +277,15 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
             <Text style={styles.aiButtonText}>Context</Text>
           </TouchableOpacity>
         )}
+
+        {/* Slang & Idiom button */}
+        <TouchableOpacity
+          style={styles.aiButton}
+          onPress={handleSlangDetection}
+        >
+          <Text style={styles.aiButtonIcon}>🗣️</Text>
+          <Text style={styles.aiButtonText}>Slang</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Cultural Context Modal */}
@@ -255,6 +295,16 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         context={culturalContext}
         loading={isAnalyzingContext}
         error={contextError || undefined}
+      />
+
+      {/* Slang Explanation Modal */}
+      <SlangExplanationModal
+        visible={showSlangModal}
+        onClose={() => setShowSlangModal(false)}
+        slangTerms={slangTerms}
+        loading={isDetectingSlang}
+        error={slangError || undefined}
+        messageText={message.text}
       />
     </View>
   );
