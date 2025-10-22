@@ -4,13 +4,16 @@ import { OptimisticMessage } from '../types';
 import { COLORS } from '../utils/constants';
 import dayjs from 'dayjs';
 import { translateMessage, detectLanguage } from '../services/translation.service';
-import { AIError } from '../types/ai.types';
+import { analyzeCulturalContext } from '../services/context.service';
+import { AIError, CulturalContext } from '../types/ai.types';
+import { CulturalContextModal } from './CulturalContextModal';
 
 interface MessageBubbleProps {
   message: OptimisticMessage;
   isOwnMessage: boolean;
   userPreferredLanguage?: string; // User's preferred language for translations
   autoTranslate?: boolean; // Auto-translate incoming messages
+  showCulturalHints?: boolean; // Show cultural context button
 }
 
 const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
@@ -18,6 +21,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   isOwnMessage,
   userPreferredLanguage = 'en',
   autoTranslate = false,
+  showCulturalHints = true,
 }) => {
   const [showTranslation, setShowTranslation] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
@@ -26,6 +30,12 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
   const [autoTranslateAttempted, setAutoTranslateAttempted] = useState(false);
   const messageIdRef = useRef(message.id);
+
+  // Cultural context state
+  const [showCulturalModal, setShowCulturalModal] = useState(false);
+  const [culturalContext, setCulturalContext] = useState<CulturalContext | null>(null);
+  const [isAnalyzingContext, setIsAnalyzingContext] = useState(false);
+  const [contextError, setContextError] = useState<string | null>(null);
 
   const timeString = dayjs(message.timestamp).format('h:mm A');
 
@@ -99,6 +109,29 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
       setTranslationError(errorMessage);
     } finally {
       setIsTranslating(false);
+    }
+  };
+
+  const handleCulturalContext = async () => {
+    setShowCulturalModal(true);
+    
+    // If we already have context, just show it
+    if (culturalContext) {
+      return;
+    }
+
+    // Otherwise, analyze
+    setIsAnalyzingContext(true);
+    setContextError(null);
+
+    try {
+      const context = await analyzeCulturalContext(message.text, detectedLanguage || undefined);
+      setCulturalContext(context);
+    } catch (error) {
+      const errorMessage = (error as AIError).message || 'Failed to analyze cultural context';
+      setContextError(errorMessage);
+    } finally {
+      setIsAnalyzingContext(false);
     }
   };
 
@@ -177,30 +210,52 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         )}
       </View>
 
-      {/* Translation button */}
-      <TouchableOpacity
-        style={[
-          styles.translateButton,
-          isOwnMessage ? styles.translateButtonOwn : styles.translateButtonOther,
-          showTranslation && styles.translateButtonActive
-        ]}
-        onPress={handleTranslate}
-        disabled={isTranslating}
-      >
-        {isTranslating ? (
-          <ActivityIndicator size="small" color={isOwnMessage ? '#007AFF' : '#666'} />
-        ) : (
-          <>
-            <Text style={styles.translateIcon}>🌐</Text>
-            <Text style={[
-              styles.translateText,
-              showTranslation && styles.translateTextActive
-            ]}>
-              {showTranslation ? 'Original' : 'Translate'}
-            </Text>
-          </>
+      {/* AI Feature Buttons */}
+      <View style={styles.aiButtonsContainer}>
+        {/* Translation button */}
+        <TouchableOpacity
+          style={[
+            styles.aiButton,
+            showTranslation && styles.aiButtonActive
+          ]}
+          onPress={handleTranslate}
+          disabled={isTranslating}
+        >
+          {isTranslating ? (
+            <ActivityIndicator size="small" color={isOwnMessage ? '#007AFF' : '#666'} />
+          ) : (
+            <>
+              <Text style={styles.aiButtonIcon}>🌐</Text>
+              <Text style={[
+                styles.aiButtonText,
+                showTranslation && styles.aiButtonTextActive
+              ]}>
+                {showTranslation ? 'Original' : 'Translate'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Cultural Context button */}
+        {showCulturalHints && (
+          <TouchableOpacity
+            style={styles.aiButton}
+            onPress={handleCulturalContext}
+          >
+            <Text style={styles.aiButtonIcon}>🌍</Text>
+            <Text style={styles.aiButtonText}>Context</Text>
+          </TouchableOpacity>
         )}
-      </TouchableOpacity>
+      </View>
+
+      {/* Cultural Context Modal */}
+      <CulturalContextModal
+        visible={showCulturalModal}
+        onClose={() => setShowCulturalModal(false)}
+        context={culturalContext}
+        loading={isAnalyzingContext}
+        error={contextError || undefined}
+      />
     </View>
   );
 };
@@ -315,35 +370,36 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic',
   },
-  translateButton: {
+  aiButtonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  aiButton: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 12,
-    marginTop: 4,
     backgroundColor: '#f0f0f0',
-    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  translateButtonOwn: {
-    alignSelf: 'flex-end',
-  },
-  translateButtonOther: {
-    alignSelf: 'flex-start',
-  },
-  translateButtonActive: {
+  aiButtonActive: {
     backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
   },
-  translateIcon: {
+  aiButtonIcon: {
     fontSize: 12,
     marginRight: 4,
   },
-  translateText: {
+  aiButtonText: {
     fontSize: 11,
     color: '#007AFF',
     fontWeight: '500',
   },
-  translateTextActive: {
+  aiButtonTextActive: {
     color: '#fff',
   },
 });

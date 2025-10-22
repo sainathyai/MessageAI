@@ -424,6 +424,7 @@ export default function ChatScreen() {
           isOwnMessage={isOwnMessage}
           userPreferredLanguage={aiSettings.preferredLanguage}
           autoTranslate={aiSettings.autoTranslate}
+          showCulturalHints={aiSettings.showCulturalHints}
         />
       </TouchableOpacity>
     );
