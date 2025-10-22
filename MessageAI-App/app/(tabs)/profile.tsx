@@ -18,31 +18,46 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            setLoading(true);
-            try {
-              await signOut();
-            } catch (error: any) {
-              Alert.alert('Error', 'Failed to sign out');
-            } finally {
-              setLoading(false);
-            }
+  const handleSignOut = async () => {
+    // On web, use window.confirm; on mobile, use Alert
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to sign out?');
+      if (!confirmed) return;
+      
+      setLoading(true);
+      try {
+        await signOut();
+      } catch (error: any) {
+        window.alert('Failed to sign out');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      Alert.alert(
+        'Sign Out',
+        'Are you sure you want to sign out?',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
           },
-        },
-      ]
-    );
+          {
+            text: 'Sign Out',
+            style: 'destructive',
+            onPress: async () => {
+              setLoading(true);
+              try {
+                await signOut();
+              } catch (error: any) {
+                Alert.alert('Error', 'Failed to sign out');
+              } finally {
+                setLoading(false);
+              }
+            },
+          },
+        ]
+      );
+    }
   };
 
   const handleTestNotification = async () => {
@@ -108,8 +123,7 @@ export default function ProfileScreen() {
 
         {/* Info */}
         <View style={styles.infoSection}>
-          <Text style={styles.infoText}>MessageAI v1.0.0 MVP</Text>
-          <Text style={styles.infoSubtext}>✅ All 12 PRs Complete! 🎉</Text>
+          <Text style={styles.infoText}>MessageAI v1.0.0</Text>
         </View>
       </View>
     </SafeAreaView>

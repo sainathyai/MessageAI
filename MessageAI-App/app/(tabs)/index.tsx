@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,10 +16,16 @@ import {
   getOrCreateConversation 
 } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
+import { 
+  getConversationsFromLocal, 
+  saveConversationToLocal,
+  getUserFromCache,
+  saveUserToCache,
+  initDatabase 
+} from '../../services/storage.service';
 import { ConversationItem } from '../../components/ConversationItem';
 import { UserSearch } from '../../components/UserSearch';
 import { scheduleLocalNotification } from '../../services/notification.service';
-import { AppState } from 'react-native';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 
@@ -31,25 +37,67 @@ export default function ChatsScreen() {
   const [searchVisible, setSearchVisible] = useState(false);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const previousConversationsRef = useRef<Conversation[]>([]);
-  const appStateRef = useRef(AppState.currentState);
 
-  // Track app state changes
+  // Helper function: Get user with cache-first strategy
+  const getUserWithCache = async (userId: string): Promise<string> => {
+    // 1. Try cache first (instant!)
+    const cachedUser = await getUserFromCache(userId);
+    if (cachedUser) {
+      return cachedUser.displayName;
+    }
+
+    // 2. If not in cache, fetch from Firestore
+    const userData = await getUserData(userId);
+    if (userData) {
+      // Save to cache for next time
+      await saveUserToCache(userData);
+      return userData.displayName;
+    }
+
+    return 'Unknown User';
+  };
+
+  // Initialize database on mount
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      appStateRef.current = nextAppState;
-      console.log('📱 App state changed to:', nextAppState);
-    });
-
-    return () => {
-      subscription.remove();
-    };
+    initDatabase();
   }, []);
 
   useEffect(() => {
     if (!user) return;
 
-    // Subscribe to conversations
+    let isMounted = true;
+
+    // Load conversations from cache FIRST (instant, works offline)
+    const loadConversations = async () => {
+      console.log('📦 Loading conversations from cache...');
+      const cachedConvos = await getConversationsFromLocal();
+      if (isMounted && cachedConvos.length > 0) {
+        console.log(`✅ Loaded ${cachedConvos.length} cached conversations`);
+        setConversations(cachedConvos);
+        setLoading(false);
+        
+        // Load user names for cached conversations (cache-first!)
+        const names: Record<string, string> = {};
+        const userFetchPromises = cachedConvos
+          .filter(convo => !convo.isGroup)
+          .map(async (convo) => {
+            const otherUserId = convo.participants.find(id => id !== user.uid);
+            if (otherUserId) {
+              names[otherUserId] = await getUserWithCache(otherUserId);
+            }
+          });
+        await Promise.all(userFetchPromises);
+        if (isMounted) {
+          setUserNames(names);
+        }
+      }
+    };
+
+    loadConversations();
+
+    // Subscribe to conversations from Firestore for real-time updates
     const unsubscribe = subscribeToConversations(user.uid, async (convos) => {
+      if (!isMounted) return;
       // Check for new messages and trigger notifications
       if (previousConversationsRef.current.length > 0) {
         for (const convo of convos) {
@@ -73,50 +121,61 @@ export default function ChatsScreen() {
               }
             }
             
-            // Send notification (only if app is in background)
-            console.log('📬 New message from:', senderName, 'App state:', appStateRef.current);
-            if (appStateRef.current !== 'active') {
-              console.log('🔔 Sending notification...');
-              await scheduleLocalNotification(
-                senderName,
-                convo.lastMessage.text,
-                { conversationId: convo.id, type: 'message' }
-              );
-            } else {
-              console.log('⏭️ Skipping notification (app is active)');
-            }
+            // Send notification (works in foreground & background)
+            console.log('📬 New message from:', senderName);
+            console.log('🔔 Sending notification...');
+            await scheduleLocalNotification(
+              senderName,
+              convo.lastMessage.text,
+              { conversationId: convo.id, type: 'message' }
+            );
           }
         }
       }
       
-      // Update previous conversations for next check
-      previousConversationsRef.current = convos;
-      setConversations(convos);
-      setLoading(false);
-
-      // Fetch user names for all conversations
+      // Fetch user names for all conversations IN PARALLEL (cache-first!)
       const names: Record<string, string> = {};
-      for (const convo of convos) {
-        if (!convo.isGroup) {
+      const userFetchPromises = convos
+        .filter(convo => !convo.isGroup)
+        .map(async (convo) => {
           const otherUserId = convo.participants.find(id => id !== user.uid);
           if (otherUserId && !names[otherUserId]) {
-            const userData = await getUserData(otherUserId);
-            if (userData) {
-              names[otherUserId] = userData.displayName;
-            }
+            names[otherUserId] = await getUserWithCache(otherUserId);
           }
+        });
+      
+      // Wait for all user data to load in parallel (much faster!)
+      await Promise.all(userFetchPromises);
+      
+      // Save conversations to SQLite cache
+      console.log('💾 Saving conversations to cache...');
+      for (const convo of convos) {
+        try {
+          await saveConversationToLocal(convo);
+        } catch (error) {
+          console.error('Error caching conversation:', error);
         }
       }
+      
+      // Update state AFTER names are loaded to prevent "Loading..." flash
       setUserNames(names);
+      setConversations(convos);
+      setLoading(false);
+      
+      // Update previous conversations for next check
+      previousConversationsRef.current = convos;
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [user]);
 
-  const handleConversationPress = (conversation: Conversation) => {
+  const handleConversationPress = useCallback((conversation: Conversation) => {
     // Navigate to chat screen (will be implemented in PR #4)
     router.push(`/chat/${conversation.id}`);
-  };
+  }, [router]);
 
   const handleUserSelect = async (selectedUser: User) => {
     if (!user) return;
@@ -132,7 +191,7 @@ export default function ChatsScreen() {
     }
   };
 
-  const renderConversationItem = ({ item }: { item: Conversation }) => {
+  const renderConversationItem = useCallback(({ item }: { item: Conversation }) => {
     const otherUserId = item.participants.find(id => id !== user?.uid);
     const otherUserName = otherUserId ? userNames[otherUserId] : undefined;
 
@@ -144,7 +203,7 @@ export default function ChatsScreen() {
         onPress={() => handleConversationPress(item)}
       />
     );
-  };
+  }, [user?.uid, userNames, handleConversationPress]);
 
   const renderEmptyState = () => (
     <EmptyState

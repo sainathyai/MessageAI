@@ -230,6 +230,7 @@ const styles = StyleSheet.create({
     padding: 16,
     fontSize: 16,
     backgroundColor: COLORS.WHITE,
+    color: COLORS.BLACK,
   },
   button: {
     backgroundColor: COLORS.PRIMARY,

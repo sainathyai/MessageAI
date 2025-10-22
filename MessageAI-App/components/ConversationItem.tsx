@@ -12,7 +12,7 @@ interface ConversationItemProps {
   onPress: () => void;
 }
 
-export const ConversationItem: React.FC<ConversationItemProps> = ({
+const ConversationItemComponent: React.FC<ConversationItemProps> = ({
   conversation,
   currentUserId,
   otherUserName,
@@ -42,7 +42,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
 
   const displayName = conversation.isGroup 
     ? conversation.groupName || 'Group Chat'
-    : otherUserName || 'Unknown User';
+    : otherUserName || 'Loading...';
 
   const lastMessageText = conversation.lastMessage?.text || 'No messages yet';
   const timeText = conversation.lastMessage?.timestamp 
@@ -52,10 +52,12 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
       {/* Avatar */}
-      <Avatar 
-        name={displayName}
-        size="medium"
-      />
+      <View style={styles.avatarContainer}>
+        <Avatar 
+          name={displayName}
+          size="medium"
+        />
+      </View>
 
       {/* Content */}
       <View style={styles.content}>
@@ -88,6 +90,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.LIGHT_GRAY,
     alignItems: 'center',
+  },
+  avatarContainer: {
+    marginRight: 12,
   },
   avatar: {
     width: 50,
@@ -135,3 +140,47 @@ const styles = StyleSheet.create({
   },
 });
 
+// Memoize to prevent flicker when readStatus updates
+export const ConversationItem = React.memo(
+  ConversationItemComponent,
+  (prevProps, nextProps) => {
+    // Don't re-render if these key properties haven't changed
+    const prevConv = prevProps.conversation;
+    const nextConv = nextProps.conversation;
+    
+    // Check if the important properties are the same
+    const sameId = prevConv.id === nextConv.id;
+    const sameLastMessage = prevConv.lastMessage?.text === nextConv.lastMessage?.text &&
+      prevConv.lastMessage?.timestamp?.getTime() === nextConv.lastMessage?.timestamp?.getTime();
+    
+    // Compare readStatus timestamps properly (handle Date objects and Firestore Timestamps)
+    const prevReadStatus = prevConv.readStatus?.[prevProps.currentUserId];
+    const nextReadStatus = nextConv.readStatus?.[nextProps.currentUserId];
+    
+    let sameReadStatus = false;
+    if (prevReadStatus === nextReadStatus) {
+      sameReadStatus = true;
+    } else if (prevReadStatus && nextReadStatus) {
+      // Convert to timestamps for comparison
+      const prevTime = prevReadStatus instanceof Date 
+        ? prevReadStatus.getTime()
+        : (typeof prevReadStatus === 'object' && 'toDate' in prevReadStatus)
+          ? prevReadStatus.toDate().getTime()
+          : new Date(prevReadStatus).getTime();
+      
+      const nextTime = nextReadStatus instanceof Date
+        ? nextReadStatus.getTime()
+        : (typeof nextReadStatus === 'object' && 'toDate' in nextReadStatus)
+          ? nextReadStatus.toDate().getTime()
+          : new Date(nextReadStatus).getTime();
+      
+      // Consider same if within 1 second (to account for minor timestamp differences)
+      sameReadStatus = Math.abs(prevTime - nextTime) < 1000;
+    }
+    
+    const sameName = prevProps.otherUserName === nextProps.otherUserName;
+    
+    // Return true if nothing changed (skip re-render)
+    return sameId && sameLastMessage && sameReadStatus && sameName;
+  }
+);
