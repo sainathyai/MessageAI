@@ -1,0 +1,13 @@
+{
+  "name": "messageai-push-notification-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda function for sending push notifications via Expo",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "dependencies": {},
+  "author": "MessageAI",
+  "license": "MIT"
+}
+
