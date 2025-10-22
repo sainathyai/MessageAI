@@ -14,6 +14,9 @@ if (Platform.OS !== 'web') {
   }
 }
 
+// Export db for use in other services
+export { db };
+
 // Check if SQLite is available
 const isSQLiteAvailable = (): boolean => {
   return Platform.OS !== 'web' && db !== null;
@@ -83,6 +86,24 @@ export const initDatabase = (): void => {
         lastSeen INTEGER,
         cachedAt INTEGER NOT NULL
       );
+    `);
+
+    // Create translations cache table
+    db.execSync(`
+      CREATE TABLE IF NOT EXISTS translations (
+        id TEXT PRIMARY KEY,
+        message_id TEXT NOT NULL,
+        source_text TEXT NOT NULL,
+        target_language TEXT NOT NULL,
+        translation TEXT NOT NULL,
+        detected_language TEXT,
+        created_at INTEGER NOT NULL
+      );
+    `);
+
+    db.execSync(`
+      CREATE INDEX IF NOT EXISTS idx_translations_message 
+      ON translations(message_id, target_language);
     `);
 
     console.log('✅ SQLite database initialized successfully');
