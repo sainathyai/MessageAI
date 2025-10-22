@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Image, Text } from 'react-native';
 import { COLORS } from '../utils/constants';
 
 /**
@@ -32,7 +32,13 @@ function RootLayoutNav() {
     // Show loading screen while checking auth state
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+        <Image 
+          source={require('../assets/icon.png')} 
+          style={styles.logo}
+          resizeMode="contain"
+        />
+        <Text style={styles.appName}>MessageAI</Text>
+        <ActivityIndicator size="large" color={COLORS.PRIMARY} style={styles.spinner} />
       </View>
     );
   }
@@ -57,6 +63,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.WHITE,
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 16,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: COLORS.PRIMARY,
+    marginBottom: 32,
+  },
+  spinner: {
+    marginTop: 16,
   },
 });
 
