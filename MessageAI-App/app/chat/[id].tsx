@@ -22,6 +22,7 @@ import { MessageBubble } from '../../components/MessageBubble';
 import { MessageInput } from '../../components/MessageInput';
 import { TypingIndicator } from '../../components/TypingIndicator';
 import { GroupMembersModal } from '../../components/GroupMembersModal';
+import { SmartRepliesBar } from '../../components/SmartRepliesBar';
 import { getMessagesFromLocal, saveMessageToLocal, getUserFromCache, saveUserToCache } from '../../services/storage.service';
 import { isOnline, queueMessageForSync } from '../../services/sync.service';
 import {
@@ -33,6 +34,9 @@ import {
 } from '../../services/presence.service';
 import { setBadgeCount } from '../../services/notification.service';
 import { useAISettings } from '../../hooks/useAISettings';
+import { generateSmartReplies, learnCommunicationStyle } from '../../services/smart-replies.service';
+import { SmartReply } from '../../types/ai.types';
+import { isAIConfigured } from '../../services/ai.service';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -54,6 +58,12 @@ export default function ChatScreen() {
   const [participantCount, setParticipantCount] = useState(0);
   const [participantIds, setParticipantIds] = useState<string[]>([]);
   const [showGroupMembers, setShowGroupMembers] = useState(false);
+
+  // Smart replies state
+  const [smartReplies, setSmartReplies] = useState<SmartReply[]>([]);
+  const [loadingSmartReplies, setLoadingSmartReplies] = useState(false);
+  const [smartRepliesError, setSmartRepliesError] = useState<string | null>(null);
+  const smartRepliesTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clear badge count when entering chat
   useEffect(() => {
@@ -283,6 +293,77 @@ export default function ChatScreen() {
     } catch (error) {
       console.error('Error creating conversation:', error);
     }
+  };
+
+  // Generate smart replies when messages change
+  const generateRepliesForMessages = async () => {
+    // Only generate if AI is configured, smart replies are enabled, and we have messages
+    if (!isAIConfigured() || !aiSettings.smartRepliesEnabled || messages.length === 0 || !user) {
+      return;
+    }
+
+    // Don't generate for own messages (last message must be from someone else)
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage.senderId === user.uid) {
+      setSmartReplies([]);
+      return;
+    }
+
+    // Debounce: Clear any existing timeout
+    if (smartRepliesTimeoutRef.current) {
+      clearTimeout(smartRepliesTimeoutRef.current);
+    }
+
+    // Wait 500ms before generating (to avoid too many API calls)
+    smartRepliesTimeoutRef.current = setTimeout(async () => {
+      setLoadingSmartReplies(true);
+      setSmartRepliesError(null);
+
+      try {
+        // Learn user's communication style
+        const userStyle = learnCommunicationStyle(
+          messages.map(m => ({
+            ...m,
+            timestamp: m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp),
+          })),
+          user.uid
+        );
+
+        // Generate smart replies
+        const replies = await generateSmartReplies(
+          messages.slice(-10).map(m => ({
+            ...m,
+            timestamp: m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp),
+          })),
+          userStyle,
+          3
+        );
+
+        setSmartReplies(replies);
+      } catch (error: any) {
+        console.error('Error generating smart replies:', error);
+        setSmartRepliesError(error.message || 'Failed to generate replies');
+      } finally {
+        setLoadingSmartReplies(false);
+      }
+    }, 500);
+  };
+
+  // Trigger smart replies generation when messages change
+  useEffect(() => {
+    generateRepliesForMessages();
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (smartRepliesTimeoutRef.current) {
+        clearTimeout(smartRepliesTimeoutRef.current);
+      }
+    };
+  }, [messages, user, aiSettings.smartRepliesEnabled]);
+
+  const handleSelectReply = (replyText: string) => {
+    // When a smart reply is selected, send it as a message
+    handleSendMessage(replyText);
   };
 
   const handleSendMessage = async (text: string) => {
@@ -527,6 +608,16 @@ export default function ChatScreen() {
 
         {/* Typing Indicator */}
         <TypingIndicator typingUsers={typingUsers} />
+
+        {/* Smart Replies Bar */}
+        <SmartRepliesBar
+          replies={smartReplies}
+          onSelectReply={handleSelectReply}
+          loading={loadingSmartReplies}
+          error={smartRepliesError || undefined}
+          onRetry={generateRepliesForMessages}
+          visible={aiSettings.smartRepliesEnabled && isAIConfigured()}
+        />
 
         {/* Message Input */}
         <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
