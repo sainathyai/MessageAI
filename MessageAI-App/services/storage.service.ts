@@ -72,6 +72,19 @@ export const initDatabase = (): void => {
       );
     `);
 
+    // Create users cache table
+    db.execSync(`
+      CREATE TABLE IF NOT EXISTS users_cache (
+        uid TEXT PRIMARY KEY,
+        email TEXT,
+        displayName TEXT NOT NULL,
+        photoURL TEXT,
+        isOnline INTEGER,
+        lastSeen INTEGER,
+        cachedAt INTEGER NOT NULL
+      );
+    `);
+
     console.log('✅ SQLite database initialized successfully');
   } catch (error) {
     console.error('❌ Error initializing database:', error);
@@ -294,6 +307,64 @@ export const getConversationsFromLocal = async (): Promise<Conversation[]> => {
 };
 
 /**
+ * Save user data to cache
+ */
+export const saveUserToCache = async (user: { uid: string; email: string; displayName: string; photoURL?: string; isOnline?: boolean; lastSeen?: Date }): Promise<void> => {
+  if (!isSQLiteAvailable()) return;
+  
+  try {
+    const statement = await db.prepareAsync(`
+      INSERT OR REPLACE INTO users_cache 
+      (uid, email, displayName, photoURL, isOnline, lastSeen, cachedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    await statement.executeAsync([
+      user.uid,
+      user.email,
+      user.displayName,
+      user.photoURL || null,
+      user.isOnline ? 1 : 0,
+      user.lastSeen ? user.lastSeen.getTime() : null,
+      Date.now()
+    ]);
+
+    await statement.finalizeAsync();
+  } catch (error) {
+    console.error('Error saving user to cache:', error);
+  }
+};
+
+/**
+ * Get user data from cache
+ */
+export const getUserFromCache = async (uid: string): Promise<{ uid: string; displayName: string; email: string; photoURL?: string } | null> => {
+  if (!isSQLiteAvailable()) return null;
+  
+  try {
+    const result = await db.getAllAsync<{
+      uid: string;
+      email: string;
+      displayName: string;
+      photoURL: string | null;
+    }>('SELECT * FROM users_cache WHERE uid = ?', [uid]);
+
+    if (result.length === 0) return null;
+
+    const row = result[0];
+    return {
+      uid: row.uid,
+      email: row.email,
+      displayName: row.displayName,
+      photoURL: row.photoURL || undefined
+    };
+  } catch (error) {
+    console.error('Error getting user from cache:', error);
+    return null;
+  }
+};
+
+/**
  * Clear all data from local storage (for debugging)
  */
 export const clearLocalStorage = async (): Promise<void> => {
@@ -302,6 +373,7 @@ export const clearLocalStorage = async (): Promise<void> => {
   try {
     await db.execAsync('DELETE FROM messages');
     await db.execAsync('DELETE FROM conversations');
+    await db.execAsync('DELETE FROM users_cache');
     console.log('✅ Local storage cleared');
   } catch (error) {
     console.error('Error clearing local storage:', error);

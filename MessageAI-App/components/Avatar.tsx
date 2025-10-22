@@ -37,11 +37,11 @@ export const Avatar: React.FC<AvatarProps> = ({
   const getTextSize = () => {
     switch (size) {
       case 'small':
-        return 14;
+        return 12;
       case 'large':
-        return 28;
+        return 24;
       default:
-        return 18;
+        return 16;
     }
   };
 
@@ -105,16 +105,16 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   small: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
   },
   medium: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
   },
   large: {
-    width: 80,
-    height: 80,
+    width: 70,
+    height: 70,
   },
   onlineBadge: {
     position: 'absolute',

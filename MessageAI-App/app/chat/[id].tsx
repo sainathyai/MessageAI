@@ -21,7 +21,7 @@ import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
 import { MessageInput } from '../../components/MessageInput';
 import { TypingIndicator } from '../../components/TypingIndicator';
-import { getMessagesFromLocal, saveMessageToLocal } from '../../services/storage.service';
+import { getMessagesFromLocal, saveMessageToLocal, getUserFromCache, saveUserToCache } from '../../services/storage.service';
 import { isOnline, queueMessageForSync } from '../../services/sync.service';
 import {
   subscribeToUserPresence,
@@ -42,7 +42,7 @@ export default function ChatScreen() {
   const [firestoreMessages, setFirestoreMessages] = useState<OptimisticMessage[]>([]);
   const [optimisticMessages, setOptimisticMessages] = useState<OptimisticMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [otherUserName, setOtherUserName] = useState('Chat');
+  const [otherUserName, setOtherUserName] = useState('Loading...');
   const [otherUserId, setOtherUserId] = useState<string | null>(null);
   const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
   const [otherUserLastSeen, setOtherUserLastSeen] = useState<Date | null>(null);
@@ -57,19 +57,49 @@ export default function ChatScreen() {
 
   // Merge optimistic and Firestore messages
   useEffect(() => {
-    // Combine optimistic messages with Firestore messages
-    // Remove optimistic messages that have been confirmed by Firestore
+    // Only keep optimistic messages that are still sending or failed
+    // As soon as they're confirmed by Firestore, remove them
     const activeOptimistic = optimisticMessages.filter(opt => {
-      // Keep if it's still sending or failed
+      // Always keep if still sending or failed
       if (opt.status === 'sending' || opt.status === 'failed') return true;
-      // Remove if we have a matching Firestore message
-      return !firestoreMessages.some(fs => fs.text === opt.text && fs.senderId === opt.senderId);
+      
+      // For 'sent' optimistic messages, check if Firestore has a matching one
+      // Match by: same text, same sender, timestamp within 10 seconds
+      const hasFirestoreMatch = firestoreMessages.some(fs => 
+        fs.text.trim() === opt.text.trim() && 
+        fs.senderId === opt.senderId &&
+        Math.abs(fs.timestamp.getTime() - opt.timestamp.getTime()) < 10000
+      );
+      
+      // Remove if Firestore has it
+      return !hasFirestoreMatch;
     });
 
-    // Combine and sort all messages
-    const allMessages = [...firestoreMessages, ...activeOptimistic].sort(
-      (a, b) => a.timestamp.getTime() - b.timestamp.getTime()
-    );
+    // Combine: Firestore messages + only truly optimistic messages
+    // Use a Set to track unique message signatures to prevent any duplicates
+    const seen = new Set<string>();
+    const allMessages: OptimisticMessage[] = [];
+    
+    // Add Firestore messages first (they're the source of truth)
+    firestoreMessages.forEach(msg => {
+      const signature = `${msg.senderId}-${msg.text.trim()}-${Math.floor(msg.timestamp.getTime() / 1000)}`;
+      if (!seen.has(signature)) {
+        seen.add(signature);
+        allMessages.push(msg);
+      }
+    });
+    
+    // Add active optimistic messages (only if not already in Firestore)
+    activeOptimistic.forEach(msg => {
+      const signature = `${msg.senderId}-${msg.text.trim()}-${Math.floor(msg.timestamp.getTime() / 1000)}`;
+      if (!seen.has(signature)) {
+        seen.add(signature);
+        allMessages.push(msg);
+      }
+    });
+    
+    // Sort by timestamp (newest first for inverted FlatList)
+    allMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
     setMessages(allMessages);
   }, [firestoreMessages, optimisticMessages]);
@@ -88,11 +118,6 @@ export default function ChatScreen() {
           console.log(`✅ Loaded ${cachedMessages.length} cached messages`);
           setFirestoreMessages(cachedMessages);
           setLoading(false);
-          
-          // Auto-scroll to bottom
-          setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: false });
-          }, 100);
         }
 
         // 2. Then subscribe to Firestore for real-time updates
@@ -113,11 +138,6 @@ export default function ChatScreen() {
           
           setFirestoreMessages(msgs as OptimisticMessage[]);
           setLoading(false);
-          
-          // Auto-scroll to bottom on new message
-          setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }, 100);
         });
 
         return unsubscribe;
@@ -219,9 +239,19 @@ export default function ChatScreen() {
         const foundOtherUserId = conversation.participants.find(uid => uid !== user.uid);
         if (foundOtherUserId) {
           setOtherUserId(foundOtherUserId);
+          
+          // Try cache first for instant load
+          const cachedUser = await getUserFromCache(foundOtherUserId);
+          if (cachedUser) {
+            setOtherUserName(cachedUser.displayName);
+          }
+          
+          // Then fetch from Firestore (will update if changed)
           const userData = await getUserData(foundOtherUserId);
           if (userData) {
             setOtherUserName(userData.displayName);
+            // Save to cache for next time
+            await saveUserToCache(userData);
           }
         }
       } else if (conversation?.isGroup) {
@@ -252,10 +282,6 @@ export default function ChatScreen() {
           setOptimisticMessages(prev => [...prev, optimisticMsg]);
           // Save to local storage immediately
           saveMessageToLocal(optimisticMsg).catch(console.error);
-          // Auto-scroll to bottom
-          setTimeout(() => {
-            flatListRef.current?.scrollToEnd({ animated: true });
-          }, 100);
         },
         // On success
         (realId) => {
@@ -299,11 +325,6 @@ export default function ChatScreen() {
       try {
         await queueMessageForSync(offlineMessage);
         console.log('✅ Message queued successfully');
-        
-        // Show as "sending" - will update when synced
-        setTimeout(() => {
-          flatListRef.current?.scrollToEnd({ animated: true });
-        }, 100);
       } catch (error) {
         console.error('Error queuing message:', error);
         // Mark as failed
@@ -383,7 +404,7 @@ export default function ChatScreen() {
   };
 
   const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
+    <View style={[styles.emptyContainer, { transform: [{ scaleY: -1 }] }]}>
       <Text style={styles.emptyText}>No messages yet</Text>
       <Text style={styles.emptySubtext}>Send a message to start the conversation!</Text>
     </View>
@@ -445,14 +466,23 @@ export default function ChatScreen() {
         <FlatList
           ref={flatListRef}
           data={messages}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => {
+            // Use a stable key that doesn't change when optimistic → real message
+            // This prevents React from unmounting/remounting the component
+            const signature = `${item.senderId}-${item.text.trim()}-${Math.floor(item.timestamp.getTime() / 1000)}`;
+            return signature;
+          }}
           renderItem={renderMessage}
+          inverted
           contentContainerStyle={[
             styles.messagesList,
             messages.length === 0 && styles.emptyList
           ]}
           ListEmptyComponent={renderEmptyState}
-          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+            autoscrollToTopThreshold: 100,
+          }}
         />
 
         {/* Typing Indicator */}
@@ -468,7 +498,7 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
+    backgroundColor: COLORS.PRIMARY,
   },
   container: {
     flex: 1,
@@ -484,9 +514,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    backgroundColor: COLORS.WHITE,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.LIGHT_GRAY,
+    backgroundColor: COLORS.PRIMARY,
     paddingTop: 50, // Account for status bar
   },
   backButton: {
@@ -497,7 +525,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 28,
-    color: COLORS.PRIMARY,
+    color: COLORS.WHITE,
   },
   headerInfo: {
     flex: 1,
@@ -507,7 +535,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.TEXT_PRIMARY,
+    color: COLORS.WHITE,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -518,12 +546,15 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: COLORS.ONLINE,
+    backgroundColor: '#4ADE80',
     marginRight: 4,
+    borderWidth: 1,
+    borderColor: COLORS.WHITE,
   },
   statusText: {
     fontSize: 12,
-    color: COLORS.TEXT_SECONDARY,
+    color: COLORS.WHITE,
+    opacity: 0.9,
   },
   messagesList: {
     padding: 16,
