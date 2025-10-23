@@ -3,6 +3,7 @@ import { View, Platform, StyleSheet } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRef } from 'react';
 import { COLORS } from '../../utils/constants';
+import { Colors } from '../../constants'; // New teal theme
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
@@ -17,11 +18,11 @@ export default function TabsLayout() {
     <View style={styles.container}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: COLORS.PRIMARY,
-          tabBarInactiveTintColor: COLORS.GRAY,
+          tabBarActiveTintColor: Colors.primary, // Teal accent
+          tabBarInactiveTintColor: Colors.textSecondary, // Gray for inactive
           tabBarStyle: {
-            backgroundColor: COLORS.WHITE,
-            borderTopColor: COLORS.LIGHT_GRAY,
+            backgroundColor: Colors.white,
+            borderTopColor: Colors.divider,
             borderTopWidth: 1,
             paddingTop: 8,
             paddingBottom: Platform.OS === 'ios' ? 20 : 12,
@@ -38,9 +39,9 @@ export default function TabsLayout() {
             marginBottom: 4,
           },
           headerStyle: {
-            backgroundColor: COLORS.PRIMARY,
+            backgroundColor: Colors.primary, // Teal header
           },
-          headerTintColor: COLORS.WHITE,
+          headerTintColor: Colors.white,
           headerTitleStyle: {
             fontWeight: 'bold',
           },
@@ -91,7 +92,7 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Teal background
   },
   tabIcon: {
     alignItems: 'center',
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   bottomSafeArea: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Teal footer
   },
 });
 

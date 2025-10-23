@@ -13,6 +13,7 @@ import SlangExplanationModal from './SlangExplanationModal';
 interface MessageBubbleProps {
   message: OptimisticMessage;
   isOwnMessage: boolean;
+  isGroupChat?: boolean; // Show sender names only in group chats
   userPreferredLanguage?: string; // User's preferred language for translations
   autoTranslate?: boolean; // Auto-translate incoming messages
   showCulturalHints?: boolean; // Show cultural context button
@@ -21,6 +22,7 @@ interface MessageBubbleProps {
 const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   message,
   isOwnMessage,
+  isGroupChat = false,
   userPreferredLanguage = 'en',
   autoTranslate = false,
   showCulturalHints = true,
@@ -44,6 +46,9 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   const [slangTerms, setSlangTerms] = useState<SlangTerm[]>([]);
   const [isDetectingSlang, setIsDetectingSlang] = useState(false);
   const [slangError, setSlangError] = useState<string | null>(null);
+
+  // Time visibility state
+  const [showTime, setShowTime] = useState(false);
 
   const timeString = dayjs(message.timestamp).format('h:mm A');
 
@@ -197,20 +202,29 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
       styles.container,
       isOwnMessage ? styles.ownMessageContainer : styles.otherMessageContainer
     ]}>
-      {!isOwnMessage && (
+      {/* Only show sender name in group chats */}
+      {!isOwnMessage && isGroupChat && message.senderName && (
         <Text style={styles.senderName}>{message.senderName}</Text>
       )}
       
-      <View style={[
-        styles.bubble,
-        isOwnMessage ? styles.ownBubble : styles.otherBubble,
-        message.status === 'failed' && styles.failedBubble
-      ]}>
+      <TouchableOpacity
+        activeOpacity={0.8}
+        onPress={() => setShowTime(!showTime)}
+        style={[
+          styles.bubble,
+          isOwnMessage ? styles.ownBubble : styles.otherBubble,
+          message.status === 'failed' && styles.failedBubble
+        ]}
+      >
         <Text style={[
           styles.text,
           isOwnMessage ? styles.ownText : styles.otherText
         ]}>
           {showTranslation && translation ? translation : message.text}
+          {/* Translation indicator - inline as nested Text */}
+          {showTranslation && detectedLanguage && (
+            <Text style={styles.translationIndicatorInline}>  🌐</Text>
+          )}
         </Text>
 
         {/* Translation error */}
@@ -218,78 +232,115 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
           <Text style={styles.translationError}>⚠️ {translationError}</Text>
         )}
 
-        <View style={styles.timeContainer}>
-          {/* Translation indicator - inline with time */}
-          {showTranslation && detectedLanguage && (
-            <View style={styles.translationIndicator}>
-              <Text style={[
-                styles.translationIndicatorText,
-                isOwnMessage ? styles.translationIndicatorOwn : styles.translationIndicatorOther
-              ]}>
-                🌐
-              </Text>
-            </View>
-          )}
-          
-          <Text style={[
-            styles.time,
-            isOwnMessage ? styles.ownTime : styles.otherTime
-          ]}>
-            {timeString}
-          </Text>
-          {renderStatusIndicator()}
-        </View>
         {message.status === 'failed' && message.error && (
           <Text style={styles.errorText}>{message.error}</Text>
         )}
-      </View>
+      </TouchableOpacity>
 
-      {/* AI Feature Buttons */}
-      <View style={styles.aiButtonsContainer}>
-        {/* Translation button */}
-        <TouchableOpacity
-          style={[
-            styles.aiButton,
-            showTranslation && styles.aiButtonActive
-          ]}
-          onPress={handleTranslate}
-          disabled={isTranslating}
-        >
-          {isTranslating ? (
-            <ActivityIndicator size="small" color={Colors.accent} />
-          ) : (
+      {/* Time, Status, and AI Buttons - INLINE, below bubble */}
+      {(showTime || message.status === 'sending' || message.status === 'failed') && (
+        <View style={[
+          styles.timeAndAiContainer,
+          isOwnMessage ? styles.timeAndAiContainerOwn : styles.timeAndAiContainerOther
+        ]}>
+          {/* For SENT messages: AI buttons (REVERSED ORDER) first, then time on right */}
+          {isOwnMessage ? (
             <>
-              <Text style={styles.aiButtonIcon}>🌐</Text>
-              <Text style={[
-                styles.aiButtonText,
-                showTranslation && styles.aiButtonTextActive
-              ]}>
-                {showTranslation ? 'Original' : 'Translate'}
-              </Text>
+              {/* AI Feature Buttons - REVERSED ORDER for sent messages */}
+              <View style={styles.aiButtonsInline}>
+                {/* Slang & Idiom button - FIRST */}
+                <TouchableOpacity
+                  style={styles.aiButtonCompact}
+                  onPress={handleSlangDetection}
+                >
+                  <Text style={styles.aiButtonIcon}>🗣️</Text>
+                </TouchableOpacity>
+
+                {/* Cultural Context button - SECOND */}
+                {showCulturalHints && (
+                  <TouchableOpacity
+                    style={styles.aiButtonCompact}
+                    onPress={handleCulturalContext}
+                  >
+                    <Text style={styles.aiButtonIcon}>🌍</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Translation button - LAST */}
+                <TouchableOpacity
+                  style={[
+                    styles.aiButtonCompact,
+                    showTranslation && styles.aiButtonActive
+                  ]}
+                  onPress={handleTranslate}
+                  disabled={isTranslating}
+                >
+                  {isTranslating ? (
+                    <ActivityIndicator size="small" color={Colors.accent} />
+                  ) : (
+                    <Text style={styles.aiButtonIcon}>🌐</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+
+              {/* Time and status on right */}
+              <View style={styles.timeWrapper}>
+                <Text style={styles.ownTime}>
+                  {timeString}
+                </Text>
+                {renderStatusIndicator()}
+              </View>
+            </>
+          ) : (
+            /* For RECEIVED messages: Time first, then AI buttons */
+            <>
+              {/* Time first (left) */}
+              <View style={styles.timeWrapper}>
+                <Text style={styles.otherTime}>
+                  {timeString}
+                </Text>
+              </View>
+
+              {/* AI Feature Buttons - Inline */}
+              <View style={styles.aiButtonsInline}>
+                {/* Translation button */}
+                <TouchableOpacity
+                  style={[
+                    styles.aiButtonCompact,
+                    showTranslation && styles.aiButtonActive
+                  ]}
+                  onPress={handleTranslate}
+                  disabled={isTranslating}
+                >
+                  {isTranslating ? (
+                    <ActivityIndicator size="small" color={Colors.accent} />
+                  ) : (
+                    <Text style={styles.aiButtonIcon}>🌐</Text>
+                  )}
+                </TouchableOpacity>
+
+                {/* Cultural Context button */}
+                {showCulturalHints && (
+                  <TouchableOpacity
+                    style={styles.aiButtonCompact}
+                    onPress={handleCulturalContext}
+                  >
+                    <Text style={styles.aiButtonIcon}>🌍</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Slang & Idiom button */}
+                <TouchableOpacity
+                  style={styles.aiButtonCompact}
+                  onPress={handleSlangDetection}
+                >
+                  <Text style={styles.aiButtonIcon}>🗣️</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
-        </TouchableOpacity>
-
-        {/* Cultural Context button */}
-        {showCulturalHints && (
-          <TouchableOpacity
-            style={styles.aiButton}
-            onPress={handleCulturalContext}
-          >
-            <Text style={styles.aiButtonIcon}>🌍</Text>
-            <Text style={styles.aiButtonText}>Context</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Slang & Idiom button */}
-        <TouchableOpacity
-          style={styles.aiButton}
-          onPress={handleSlangDetection}
-        >
-          <Text style={styles.aiButtonIcon}>🗣️</Text>
-          <Text style={styles.aiButtonText}>Slang</Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      )}
 
       {/* Cultural Context Modal */}
       <CulturalContextModal
@@ -316,7 +367,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: Spacing.md,
-    maxWidth: '70%', // Smaller bubbles (was 75%)
+    maxWidth: '65%', // Compact bubbles like WhatsApp
   },
   ownMessageContainer: {
     alignSelf: 'flex-end',
@@ -331,17 +382,20 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxs,
   },
   bubble: {
-    paddingHorizontal: Spacing.md + 2, // More compact (was 16, now 14)
-    paddingVertical: Spacing.sm + 1,    // More compact (was 10, now 9)
-    borderRadius: BorderRadius.lg,      // 20px main corners
+    paddingHorizontal: Spacing.default, // Balanced padding (16px both sides)
+    paddingVertical: 7,                 // Slightly thicker bubble (7px, was 5px)
+    borderRadius: 24,                   // More rounded (24px)
+    maxWidth: '100%',                   // Don't exceed container width
   },
   ownBubble: {
     backgroundColor: Colors.outgoingBubble, // Teal theme
     borderBottomRightRadius: 2,             // Sharp tail pointing out
+    alignSelf: 'flex-end',                  // Right aligned for sent messages
   },
   otherBubble: {
     backgroundColor: Colors.incomingBubble, // Light gray
     borderBottomLeftRadius: 2,              // Sharp tail pointing out
+    alignSelf: 'flex-start',                // Left aligned for received messages
   },
   failedBubble: {
     opacity: 0.7,
@@ -350,30 +404,72 @@ const styles = StyleSheet.create({
   },
   text: {
     ...Typography.messageText,
+    paddingHorizontal: Spacing.xs,  // Extra padding from edges (4px)
   },
   ownText: {
     color: Colors.outgoingBubbleText,
+    textAlign: 'right', // Sent messages: right aligned
   },
   otherText: {
     color: Colors.incomingBubbleText,
+    textAlign: 'left', // Received messages: left aligned
   },
-  timeContainer: {
+  translationIndicatorInline: {
+    fontSize: 13,             // Slightly larger for better visibility (was 12)
+    opacity: 0.75,            // Slightly more visible (was 0.7)
+    // Two spaces in the text provide spacing, no marginLeft needed
+  },
+  timeAndAiContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: Spacing.xs,
-    minHeight: 20,
+    marginTop: Spacing.xs - 2, // Close to bubble (2px below)
+    paddingHorizontal: Spacing.xs,
+    gap: Spacing.sm,
+  },
+  timeAndAiContainerOwn: {
+    justifyContent: 'flex-end',  // Right aligned for sent
+    alignSelf: 'flex-end',        // Position on right side
+  },
+  timeAndAiContainerOther: {
+    justifyContent: 'flex-start', // Left aligned for received
+    alignSelf: 'flex-start',
+  },
+  timeWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
   },
   time: {
     ...Typography.timestamp,
-    textAlign: 'right',
-    minWidth: 50,
+    fontSize: 8, // Extra small time (was 9)
   },
   ownTime: {
-    color: Colors.white70,
+    color: Colors.textSecondary,
   },
   otherTime: {
     color: Colors.textSecondary,
+  },
+  aiButtonsInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  aiButtonCompact: {
+    width: 24,           // Smaller (was 28)
+    height: 24,          // Smaller (was 28)
+    borderRadius: 12,    // Match new size
+    backgroundColor: Colors.surfaceTertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  aiButtonActive: {
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
+  },
+  aiButtonIcon: {
+    fontSize: 12,        // Smaller icons (was 14)
   },
   statusIndicatorContainer: {
     width: 20,
@@ -385,7 +481,7 @@ const styles = StyleSheet.create({
   },
   statusText: {
     ...Typography.small,
-    color: Colors.white70,
+    color: Colors.textSecondary, // Gray for visibility on light background
     textAlign: 'center',
   },
   statusRead: {
@@ -403,57 +499,11 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
     fontStyle: 'italic',
   },
-  translationIndicator: {
-    marginRight: Spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  translationIndicatorText: {
-    ...Typography.small,
-  },
-  translationIndicatorOwn: {
-    opacity: 0.9,
-  },
-  translationIndicatorOther: {
-    opacity: 0.8,
-  },
   translationError: {
     ...Typography.small,
     color: Colors.errorLight,
     marginTop: Spacing.xs,
     fontStyle: 'italic',
-  },
-  aiButtonsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
-  },
-  aiButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.xs,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    backgroundColor: Colors.surfaceTertiary,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  aiButtonActive: {
-    backgroundColor: Colors.accent,
-    borderColor: Colors.accent,
-  },
-  aiButtonIcon: {
-    fontSize: 12,
-    marginRight: Spacing.xs,
-  },
-  aiButtonText: {
-    ...Typography.small,
-    color: Colors.accent,
-    fontWeight: '500',
-  },
-  aiButtonTextActive: {
-    color: Colors.white,
   },
 });
 
