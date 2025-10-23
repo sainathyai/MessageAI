@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { OptimisticMessage } from '../types';
-import { COLORS } from '../utils/constants';
+import { Colors, Typography, Spacing, BorderRadius } from '../constants';
 import dayjs from 'dayjs';
 import { translateMessage, detectLanguage } from '../services/translation.service';
 import { analyzeCulturalContext } from '../services/context.service';
@@ -256,7 +256,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
           disabled={isTranslating}
         >
           {isTranslating ? (
-            <ActivityIndicator size="small" color={isOwnMessage ? '#007AFF' : '#666'} />
+            <ActivityIndicator size="small" color={Colors.accent} />
           ) : (
             <>
               <Text style={styles.aiButtonIcon}>🌐</Text>
@@ -315,7 +315,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
+    marginBottom: Spacing.md,
     maxWidth: '75%',
   },
   ownMessageContainer: {
@@ -325,92 +325,91 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   senderName: {
-    fontSize: 12,
-    color: COLORS.TEXT_SECONDARY,
-    marginLeft: 12,
-    marginBottom: 2,
+    ...Typography.small,
+    color: Colors.textSecondary,
+    marginLeft: Spacing.md,
+    marginBottom: Spacing.xxs,
   },
   bubble: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
+    paddingHorizontal: Spacing.default,
+    paddingVertical: Spacing.sm + 2,
+    borderRadius: BorderRadius.lg, // 20px for modern, soft feel
   },
   ownBubble: {
-    backgroundColor: COLORS.PRIMARY,
-    borderBottomRightRadius: 4,
+    backgroundColor: Colors.outgoingBubble, // Teal theme
+    borderBottomRightRadius: BorderRadius.xs, // Small tail
   },
   otherBubble: {
-    backgroundColor: COLORS.LIGHT_GRAY,
-    borderBottomLeftRadius: 4,
+    backgroundColor: Colors.incomingBubble, // Light gray
+    borderBottomLeftRadius: BorderRadius.xs, // Small tail
   },
   failedBubble: {
     opacity: 0.7,
     borderWidth: 1,
-    borderColor: '#FF3B30',
+    borderColor: Colors.error,
   },
   text: {
-    fontSize: 16,
-    lineHeight: 20,
+    ...Typography.messageText,
   },
   ownText: {
-    color: COLORS.WHITE,
+    color: Colors.outgoingBubbleText,
   },
   otherText: {
-    color: COLORS.TEXT_PRIMARY,
+    color: Colors.incomingBubbleText,
   },
   timeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    marginTop: 4,
-    minHeight: 20, // Match status indicator height
+    marginTop: Spacing.xs,
+    minHeight: 20,
   },
   time: {
-    fontSize: 11,
+    ...Typography.timestamp,
     textAlign: 'right',
-    minWidth: 50, // Ensure consistent width for time
+    minWidth: 50,
   },
   ownTime: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: Colors.white70,
   },
   otherTime: {
-    color: COLORS.TEXT_SECONDARY,
+    color: Colors.textSecondary,
   },
   statusIndicatorContainer: {
     width: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 4,
-    flexShrink: 0, // Prevent shrinking
+    marginLeft: Spacing.xs,
+    flexShrink: 0,
   },
   statusText: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
+    ...Typography.small,
+    color: Colors.white70,
     textAlign: 'center',
   },
   statusRead: {
-    color: '#4FC3F7', // Light blue for read receipts
+    color: Colors.accent, // Cyan accent for read receipts
   },
   statusFailed: {
-    fontSize: 12,
-    color: '#FF3B30',
+    ...Typography.small,
+    color: Colors.error,
     fontWeight: 'bold',
     textAlign: 'center',
   },
   errorText: {
-    fontSize: 11,
-    color: '#FF3B30',
-    marginTop: 4,
+    ...Typography.small,
+    color: Colors.error,
+    marginTop: Spacing.xs,
     fontStyle: 'italic',
   },
   translationIndicator: {
-    marginRight: 4,
+    marginRight: Spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },
   translationIndicatorText: {
-    fontSize: 12,
+    ...Typography.small,
   },
   translationIndicatorOwn: {
     opacity: 0.9,
@@ -419,42 +418,42 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   translationError: {
-    fontSize: 11,
-    color: '#FF6B6B',
-    marginTop: 4,
+    ...Typography.small,
+    color: Colors.errorLight,
+    marginTop: Spacing.xs,
     fontStyle: 'italic',
   },
   aiButtonsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
+    gap: Spacing.sm,
+    marginTop: Spacing.xs,
   },
   aiButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    backgroundColor: '#f0f0f0',
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.surfaceTertiary,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: Colors.border,
   },
   aiButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: Colors.accent,
+    borderColor: Colors.accent,
   },
   aiButtonIcon: {
     fontSize: 12,
-    marginRight: 4,
+    marginRight: Spacing.xs,
   },
   aiButtonText: {
-    fontSize: 11,
-    color: '#007AFF',
+    ...Typography.small,
+    color: Colors.accent,
     fontWeight: '500',
   },
   aiButtonTextActive: {
-    color: '#fff',
+    color: Colors.white,
   },
 });
 

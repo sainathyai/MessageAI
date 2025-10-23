@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
-import { COLORS } from '../utils/constants';
+import { Colors, Typography, AvatarSize, BorderRadius } from '../constants';
 
 interface AvatarProps {
   name: string;
@@ -95,35 +95,35 @@ const styles = StyleSheet.create({
   initialsContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 100,
+    borderRadius: BorderRadius.full,
   },
   initials: {
-    color: COLORS.WHITE,
+    color: Colors.white,
     fontWeight: 'bold',
   },
   image: {
-    borderRadius: 100,
+    borderRadius: BorderRadius.full,
   },
   small: {
-    width: 28,
-    height: 28,
+    width: AvatarSize.small,
+    height: AvatarSize.small,
   },
   medium: {
-    width: 40,
-    height: 40,
+    width: AvatarSize.default,
+    height: AvatarSize.default,
   },
   large: {
-    width: 70,
-    height: 70,
+    width: AvatarSize.large + 6, // 70px (was 64)
+    height: AvatarSize.large + 6,
   },
   onlineBadge: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#44B244',
+    backgroundColor: Colors.online, // Success green
     borderWidth: 2,
-    borderColor: COLORS.WHITE,
-    borderRadius: 100,
+    borderColor: Colors.white,
+    borderRadius: BorderRadius.full,
   },
   onlineBadgeSmall: {
     width: 10,

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Conversation } from '../types';
-import { COLORS } from '../utils/constants';
+import { Colors, Typography, Spacing, BorderRadius } from '../constants';
 import { formatConversationTime } from '../utils/dateFormat';
 import { Avatar } from './Avatar';
 
@@ -85,25 +85,25 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: COLORS.WHITE,
+    padding: Spacing.default,
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.LIGHT_GRAY,
+    borderBottomColor: Colors.divider,
     alignItems: 'center',
   },
   avatarContainer: {
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   avatar: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: BorderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   avatarText: {
-    color: COLORS.WHITE,
+    color: Colors.white,
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -113,30 +113,30 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   name: {
-    fontSize: 16,
-    color: COLORS.TEXT_PRIMARY,
+    ...Typography.contactName,
+    color: Colors.textPrimary,
   },
   time: {
-    fontSize: 12,
-    color: COLORS.TEXT_SECONDARY,
+    ...Typography.timestamp,
+    color: Colors.textSecondary,
   },
   lastMessage: {
-    fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
+    ...Typography.messagePreview,
+    color: Colors.textSecondary,
   },
   boldText: {
     fontWeight: 'bold',
-    color: COLORS.TEXT_PRIMARY,
+    color: Colors.textPrimary,
   },
   unreadDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.PRIMARY,
-    marginLeft: 8,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.badge, // Cyan accent for unread
+    marginLeft: Spacing.sm,
   },
 });
 
