@@ -90,10 +90,16 @@ export const SmartRepliesBar: React.FC<SmartRepliesBarProps> = ({
 
         {error && (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>⚠️ {error}</Text>
+            <View style={styles.errorIconContainer}>
+              <Text style={styles.errorIcon}>💭</Text>
+            </View>
+            <View style={styles.errorTextContainer}>
+              <Text style={styles.errorTitle}>Couldn't generate replies</Text>
+              <Text style={styles.errorMessage}>Try again or continue typing</Text>
+            </View>
             {onRetry && (
               <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-                <Text style={styles.retryButtonText}>Retry</Text>
+                <Text style={styles.retryButtonText}>↻</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -175,21 +181,60 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    gap: 12,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
   },
-  errorText: {
+  errorIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  errorIcon: {
+    fontSize: 16,
+  },
+  errorTextContainer: {
+    flex: 1,
+  },
+  errorTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4a4a4a',
+    marginBottom: 2,
+  },
+  errorMessage: {
     fontSize: 12,
-    color: '#ff6b6b',
+    color: '#7a7a7a',
   },
   retryButton: {
-    backgroundColor: '#ff6b6b',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.PRIMARY,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 2,
   },
   retryButtonText: {
-    fontSize: 12,
+    fontSize: 18,
     color: COLORS.WHITE,
     fontWeight: '600',
   },

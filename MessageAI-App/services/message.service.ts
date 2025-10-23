@@ -16,6 +16,8 @@ import { db } from '../config/firebase';
 import { Message, OptimisticMessage } from '../types';
 import { COLLECTIONS } from '../utils/constants';
 import { updateConversationLastMessage } from './conversation.service';
+import { sendMessageNotification } from './push-notification-sender.service';
+import { getTime } from '../utils/dateFormat';
 
 /**
  * Send a message to a conversation
@@ -47,6 +49,13 @@ export const sendMessage = async (
       senderId,
       timestamp: new Date()
     });
+
+    // Send push notifications to other participants
+    // Don't await - send in background to avoid delaying message response
+    sendMessageNotification(conversationId, senderId, senderName, text)
+      .catch(error => {
+        console.error('Push notification failed (non-blocking):', error);
+      });
 
     return docRef.id;
   } catch (error) {
@@ -186,7 +195,7 @@ export const subscribeToMessages = (
       });
 
       // Sort by timestamp client-side (until Firestore index is created)
-      messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+      messages.sort((a, b) => getTime(a.timestamp) - getTime(b.timestamp));
 
       callback(messages);
     });

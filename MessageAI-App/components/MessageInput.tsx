@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { COLORS } from '../utils/constants';
@@ -103,50 +102,45 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   return (
     <>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
-        <View style={styles.container}>
-          {/* Formality Button */}
-          {showFormalityButton && (
-            <TouchableOpacity
-              style={[
-                styles.formalityButton,
-                !text.trim() && styles.formalityButtonDisabled
-              ]}
-              onPress={handleOpenFormality}
-              disabled={!text.trim()}
-            >
-              <Text style={styles.formalityButtonText}>📝</Text>
-            </TouchableOpacity>
-          )}
-
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message..."
-            placeholderTextColor={COLORS.TEXT_SECONDARY}
-            value={text}
-            onChangeText={handleTextChange}
-            multiline
-            maxLength={1000}
-            editable={!disabled}
-            onSubmitEditing={handleSend}
-            blurOnSubmit={false}
-          />
-          
+      <View style={styles.container}>
+        {/* Formality Button */}
+        {showFormalityButton && (
           <TouchableOpacity
             style={[
-              styles.sendButton,
-              (!text.trim() || disabled) && styles.sendButtonDisabled
+              styles.formalityButton,
+              !text.trim() && styles.formalityButtonDisabled
             ]}
-            onPress={handleSend}
-            disabled={!text.trim() || disabled}
+            onPress={handleOpenFormality}
+            disabled={!text.trim()}
           >
-            <Text style={styles.sendButtonText}>➤</Text>
+            <Text style={styles.formalityButtonText}>📝</Text>
           </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+        )}
+
+        <TextInput
+          style={styles.input}
+          placeholder="Type a message..."
+          placeholderTextColor={COLORS.TEXT_SECONDARY}
+          value={text}
+          onChangeText={handleTextChange}
+          multiline
+          maxLength={1000}
+          editable={!disabled}
+          onSubmitEditing={handleSend}
+          blurOnSubmit={false}
+        />
+        
+        <TouchableOpacity
+          style={[
+            styles.sendButton,
+            (!text.trim() || disabled) && styles.sendButtonDisabled
+          ]}
+          onPress={handleSend}
+          disabled={!text.trim() || disabled}
+        >
+          <Text style={styles.sendButtonText}>➤</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Formality Adjustment Modal */}
       <FormalityAdjustmentModal

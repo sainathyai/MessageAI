@@ -2,6 +2,27 @@
  * Date formatting utilities for chat UI
  */
 
+import { Timestamp } from 'firebase/firestore';
+
+/**
+ * Convert Firestore Timestamp to Date
+ */
+export function toDate(value: Date | Timestamp | undefined | null): Date | undefined {
+  if (!value) return undefined;
+  if (value instanceof Timestamp) return value.toDate();
+  return value;
+}
+
+/**
+ * Get milliseconds from Date or Timestamp
+ */
+export function getTime(value: Date | Timestamp | undefined | null): number {
+  if (!value) return 0;
+  if (value instanceof Timestamp) return value.toMillis();
+  if (value instanceof Date) return value.getTime();
+  return 0;
+}
+
 /**
  * Format timestamp for message display
  * Returns:

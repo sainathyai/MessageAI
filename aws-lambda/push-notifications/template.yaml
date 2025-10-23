@@ -1,0 +1,157 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: MessageAI Push Notifications Lambda Function
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: nodejs18.x
+
+Parameters:
+  ExpoAccessToken:
+    Type: String
+    Description: Expo Access Token for higher rate limits (optional)
+    Default: ''
+    NoEcho: true
+
+Resources:
+  PushNotificationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: MessageAI-PushNotifications
+      CodeUri: .
+      Handler: index.handler
+      Description: Sends push notifications via Expo Push Notification Service
+      Environment:
+        Variables:
+          EXPO_ACCESS_TOKEN: !Ref ExpoAccessToken
+          NODE_ENV: production
+      Events:
+        SendNotification:
+          Type: Api
+          Properties:
+            Path: /send
+            Method: post
+            RestApiId: !Ref PushNotificationApi
+      Policies:
+        - Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: '*'
+
+  CheckReceiptsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: MessageAI-CheckReceipts
+      CodeUri: .
+      Handler: index.checkReceipts
+      Description: Checks delivery status of sent push notifications
+      Environment:
+        Variables:
+          EXPO_ACCESS_TOKEN: !Ref ExpoAccessToken
+          NODE_ENV: production
+      Events:
+        CheckReceipts:
+          Type: Api
+          Properties:
+            Path: /receipts
+            Method: post
+            RestApiId: !Ref PushNotificationApi
+      Policies:
+        - Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: '*'
+
+  PushNotificationApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: MessageAI-PushNotification-API
+      StageName: prod
+      Cors:
+        AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowMethods: "'POST,OPTIONS'"
+        MaxAge: "'600'"
+      Auth:
+        ApiKeyRequired: true
+
+  ApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: MessageAI-PushNotification-ApiKey
+      Description: API Key for MessageAI Push Notifications
+      Enabled: true
+
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: PushNotificationApiProdStage
+    Properties:
+      UsagePlanName: MessageAI-PushNotification-UsagePlan
+      Description: Usage plan for MessageAI Push Notifications
+      Throttle:
+        BurstLimit: 100
+        RateLimit: 50
+      Quota:
+        Limit: 10000
+        Period: DAY
+      ApiStages:
+        - ApiId: !Ref PushNotificationApi
+          Stage: prod
+
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+  # CloudWatch Alarms
+  PushNotificationErrors:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: MessageAI-PushNotification-Errors
+      AlarmDescription: Alert when push notification Lambda has errors
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref PushNotificationFunction
+
+Outputs:
+  PushNotificationApiUrl:
+    Description: API Gateway endpoint URL for sending push notifications
+    Value: !Sub 'https://${PushNotificationApi}.execute-api.${AWS::Region}.amazonaws.com/prod/send'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'
+  
+  CheckReceiptsApiUrl:
+    Description: API Gateway endpoint URL for checking receipts
+    Value: !Sub 'https://${PushNotificationApi}.execute-api.${AWS::Region}.amazonaws.com/prod/receipts'
+    Export:
+      Name: !Sub '${AWS::StackName}-ReceiptsUrl'
+  
+  ApiKey:
+    Description: API Key for authentication
+    Value: !Ref ApiKey
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiKey'
+  
+  PushNotificationFunctionArn:
+    Description: Push Notification Lambda Function ARN
+    Value: !GetAtt PushNotificationFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-FunctionArn'
+

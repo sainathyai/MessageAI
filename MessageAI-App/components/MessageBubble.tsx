@@ -206,15 +206,6 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         isOwnMessage ? styles.ownBubble : styles.otherBubble,
         message.status === 'failed' && styles.failedBubble
       ]}>
-        {/* Translation indicator */}
-        {showTranslation && detectedLanguage && (
-          <View style={styles.translationBadge}>
-            <Text style={styles.translationBadgeText}>
-              🌐 Translated from {detectedLanguage.toUpperCase()}
-            </Text>
-          </View>
-        )}
-
         <Text style={[
           styles.text,
           isOwnMessage ? styles.ownText : styles.otherText
@@ -228,6 +219,18 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         )}
 
         <View style={styles.timeContainer}>
+          {/* Translation indicator - inline with time */}
+          {showTranslation && detectedLanguage && (
+            <View style={styles.translationIndicator}>
+              <Text style={[
+                styles.translationIndicatorText,
+                isOwnMessage ? styles.translationIndicatorOwn : styles.translationIndicatorOther
+              ]}>
+                🌐
+              </Text>
+            </View>
+          )}
+          
           <Text style={[
             styles.time,
             isOwnMessage ? styles.ownTime : styles.otherTime
@@ -401,18 +404,19 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: 'italic',
   },
-  translationBadge: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    marginBottom: 6,
-    alignSelf: 'flex-start',
+  translationIndicator: {
+    marginRight: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  translationBadgeText: {
-    fontSize: 10,
-    color: '#007AFF',
-    fontWeight: '500',
+  translationIndicatorText: {
+    fontSize: 12,
+  },
+  translationIndicatorOwn: {
+    opacity: 0.9,
+  },
+  translationIndicatorOther: {
+    opacity: 0.8,
   },
   translationError: {
     fontSize: 11,

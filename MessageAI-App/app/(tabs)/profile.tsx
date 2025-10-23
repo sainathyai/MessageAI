@@ -115,39 +115,67 @@ export default function ProfileScreen() {
           {/* AI Settings Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🤖 AI Features</Text>
-              {!aiConfigured && (
-                <View style={styles.warningBadge}>
-                  <Text style={styles.warningText}>⚠️ Not Configured</Text>
+              <View>
+                <Text style={styles.sectionTitle}>AI-Powered Features</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {aiConfigured ? 'Enhance your conversations' : 'Configuration required'}
+                </Text>
+              </View>
+              {aiConfigured && (
+                <View style={styles.statusBadgeSuccess}>
+                  <View style={styles.statusDotSuccess} />
+                  <Text style={styles.statusTextSuccess}>Active</Text>
                 </View>
               )}
             </View>
 
             {!aiConfigured ? (
               <View style={styles.warningBox}>
+                <Text style={styles.warningBoxTitle}>⚙️ Setup Required</Text>
                 <Text style={styles.warningBoxText}>
-                  AI features require an OpenAI API key. Add EXPO_PUBLIC_OPENAI_API_KEY to your .env file to enable translations, cultural hints, and smart replies.
+                  AI features require an OpenAI API key. Add EXPO_PUBLIC_OPENAI_API_KEY to your .env file to unlock:
                 </Text>
+                <View style={styles.featureList}>
+                  <Text style={styles.featureListItem}>• Real-time translation</Text>
+                  <Text style={styles.featureListItem}>• Cultural context insights</Text>
+                  <Text style={styles.featureListItem}>• Smart reply suggestions</Text>
+                  <Text style={styles.featureListItem}>• Slang & idiom explanations</Text>
+                </View>
               </View>
             ) : (
               <View style={styles.settingsContainer}>
-                <View style={styles.settingItem}>
-                  <Text style={styles.settingLabel}>Preferred Language</Text>
-                  <LanguageSelector
-                    selectedLanguage={aiSettings.preferredLanguage}
-                    onSelect={(code) => 
-                      updateSettings({ preferredLanguage: code })
-                    }
-                    label="Translate messages to:"
-                  />
+                {/* Language Preference */}
+                <View style={styles.featureCard}>
+                  <View style={styles.featureHeader}>
+                    <View style={styles.featureIconContainer}>
+                      <Text style={styles.featureIcon}>🌍</Text>
+                    </View>
+                    <View style={styles.featureHeaderText}>
+                      <Text style={styles.featureTitle}>Language Preference</Text>
+                      <Text style={styles.featureSubtitle}>Your primary communication language</Text>
+                    </View>
+                  </View>
+                  <View style={styles.languageSelectorContainer}>
+                    <LanguageSelector
+                      selectedLanguage={aiSettings.preferredLanguage}
+                      onSelect={(code) => 
+                        updateSettings({ preferredLanguage: code })
+                      }
+                      label="Translate to:"
+                    />
+                  </View>
                 </View>
 
-                <View style={styles.settingItem}>
-                  <View style={styles.settingRow}>
-                    <View style={styles.settingInfo}>
-                      <Text style={styles.settingLabel}>Auto-translate messages</Text>
-                      <Text style={styles.settingDescription}>
-                        Automatically translate incoming messages
+                {/* Auto-Translate */}
+                <View style={[styles.featureCard, aiSettings.autoTranslate && styles.featureCardActive]}>
+                  <View style={styles.featureRow}>
+                    <View style={styles.featureIconContainer}>
+                      <Text style={styles.featureIcon}>⚡</Text>
+                    </View>
+                    <View style={styles.featureInfo}>
+                      <Text style={styles.featureTitle}>Auto-Translate</Text>
+                      <Text style={styles.featureDescription}>
+                        Instantly translate incoming messages to your preferred language
                       </Text>
                     </View>
                     <Switch
@@ -155,16 +183,22 @@ export default function ProfileScreen() {
                       onValueChange={(value) =>
                         updateSettings({ autoTranslate: value })
                       }
+                      trackColor={{ false: COLORS.LIGHT_GRAY, true: COLORS.PRIMARY + '40' }}
+                      thumbColor={aiSettings.autoTranslate ? COLORS.PRIMARY : COLORS.WHITE}
                     />
                   </View>
                 </View>
 
-                <View style={styles.settingItem}>
-                  <View style={styles.settingRow}>
-                    <View style={styles.settingInfo}>
-                      <Text style={styles.settingLabel}>Cultural context hints</Text>
-                      <Text style={styles.settingDescription}>
-                        Show explanations for cultural references
+                {/* Cultural Context */}
+                <View style={[styles.featureCard, aiSettings.showCulturalHints && styles.featureCardActive]}>
+                  <View style={styles.featureRow}>
+                    <View style={styles.featureIconContainer}>
+                      <Text style={styles.featureIcon}>🎭</Text>
+                    </View>
+                    <View style={styles.featureInfo}>
+                      <Text style={styles.featureTitle}>Cultural Context</Text>
+                      <Text style={styles.featureDescription}>
+                        Understand references, idioms, and cultural nuances
                       </Text>
                     </View>
                     <Switch
@@ -172,16 +206,22 @@ export default function ProfileScreen() {
                       onValueChange={(value) =>
                         updateSettings({ showCulturalHints: value })
                       }
+                      trackColor={{ false: COLORS.LIGHT_GRAY, true: COLORS.PRIMARY + '40' }}
+                      thumbColor={aiSettings.showCulturalHints ? COLORS.PRIMARY : COLORS.WHITE}
                     />
                   </View>
                 </View>
 
-                <View style={styles.settingItem}>
-                  <View style={styles.settingRow}>
-                    <View style={styles.settingInfo}>
-                      <Text style={styles.settingLabel}>Smart replies</Text>
-                      <Text style={styles.settingDescription}>
-                        AI-powered quick reply suggestions
+                {/* Smart Replies */}
+                <View style={[styles.featureCard, aiSettings.smartRepliesEnabled && styles.featureCardActive]}>
+                  <View style={styles.featureRow}>
+                    <View style={styles.featureIconContainer}>
+                      <Text style={styles.featureIcon}>🤖</Text>
+                    </View>
+                    <View style={styles.featureInfo}>
+                      <Text style={styles.featureTitle}>Smart Replies</Text>
+                      <Text style={styles.featureDescription}>
+                        AI-powered suggestions that learn your communication style
                       </Text>
                     </View>
                     <Switch
@@ -189,6 +229,8 @@ export default function ProfileScreen() {
                       onValueChange={(value) =>
                         updateSettings({ smartRepliesEnabled: value })
                       }
+                      trackColor={{ false: COLORS.LIGHT_GRAY, true: COLORS.PRIMARY + '40' }}
+                      thumbColor={aiSettings.smartRepliesEnabled ? COLORS.PRIMARY : COLORS.WHITE}
                     />
                   </View>
                 </View>
@@ -346,65 +388,135 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: COLORS.DARK_GRAY,
+    marginBottom: 4,
   },
-  warningBadge: {
-    backgroundColor: '#fff3cd',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+  sectionSubtitle: {
+    fontSize: 14,
+    color: COLORS.GRAY,
+    marginTop: 2,
   },
-  warningText: {
-    fontSize: 11,
-    color: '#856404',
+  statusBadgeSuccess: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#d4edda',
+    borderRadius: 16,
+  },
+  statusDotSuccess: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#28a745',
+    marginRight: 6,
+  },
+  statusTextSuccess: {
+    fontSize: 13,
+    color: '#155724',
     fontWeight: '600',
   },
   warningBox: {
     backgroundColor: '#fff3cd',
-    borderRadius: 8,
-    padding: 16,
+    borderRadius: 12,
+    padding: 20,
     borderLeftWidth: 4,
     borderLeftColor: '#ffc107',
+  },
+  warningBoxTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#856404',
+    marginBottom: 8,
   },
   warningBoxText: {
     fontSize: 14,
     color: '#856404',
     lineHeight: 20,
+    marginBottom: 12,
+  },
+  featureList: {
+    gap: 6,
+    marginTop: 8,
+  },
+  featureListItem: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
+    fontWeight: '500',
   },
   settingsContainer: {
-    gap: 16,
+    gap: 12,
   },
-  settingItem: {
-    backgroundColor: COLORS.LIGHT_GRAY,
-    borderRadius: 12,
-    padding: 16,
+  featureCard: {
+    backgroundColor: COLORS.WHITE,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1.5,
+    borderColor: COLORS.LIGHT_GRAY,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  settingRow: {
+  featureCardActive: {
+    borderColor: COLORS.PRIMARY,
+    backgroundColor: COLORS.PRIMARY + '08',
+  },
+  featureHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: 16,
   },
-  settingInfo: {
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  featureIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.PRIMARY + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  featureIcon: {
+    fontSize: 22,
+  },
+  featureHeaderText: {
+    flex: 1,
+  },
+  featureInfo: {
     flex: 1,
     marginRight: 12,
   },
-  settingLabel: {
+  featureTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: COLORS.DARK_GRAY,
     marginBottom: 4,
   },
-  settingDescription: {
+  featureSubtitle: {
     fontSize: 13,
     color: COLORS.GRAY,
     lineHeight: 18,
+  },
+  featureDescription: {
+    fontSize: 13,
+    color: COLORS.GRAY,
+    lineHeight: 19,
+  },
+  languageSelectorContainer: {
+    paddingTop: 8,
   },
 });
 

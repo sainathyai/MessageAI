@@ -3,10 +3,11 @@
  * Context-aware smart reply generation using RAG-style conversation analysis
  */
 
+import OpenAI from 'openai';
 import { callOpenAI, parseJSONResponse } from './ai.service';
 import { SmartReply, UserCommunicationStyle } from '../types/ai.types';
 import { Message } from '../types';
-import OpenAI from 'openai';
+import { getTime } from '../utils/dateFormat';
 
 /**
  * Generate smart replies based on conversation context
@@ -52,14 +53,29 @@ ${styleContext}
 Conversation Context:
 ${conversationContext}
 
-Return ONLY valid JSON in this exact format (array of ${count} replies):
+CRITICAL: You MUST return EXACTLY ${count} replies in a JSON array. Return ONLY the JSON array, no other text.
+
+Format:
 [
   {
     "text": "suggested reply text",
-    "type": "question" | "agreement" | "suggestion" | "neutral",
-    "confidence": 0.85 (0-1 scale)
+    "type": "question",
+    "confidence": 0.85
+  },
+  {
+    "text": "another reply",
+    "type": "agreement",
+    "confidence": 0.75
+  },
+  {
+    "text": "third reply",
+    "type": "suggestion",
+    "confidence": 0.70
   }
-]`;
+]
+
+Valid types: "question", "agreement", "suggestion", "neutral"
+Confidence: number between 0 and 1`;
 
     const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
@@ -72,15 +88,51 @@ Return ONLY valid JSON in this exact format (array of ${count} replies):
       responseFormat: 'json',
     });
 
-    const replies = parseJSONResponse<SmartReply[]>(response);
+    console.log('📝 Raw OpenAI response (first 200 chars):', response.substring(0, 200));
+
+    const parsed = parseJSONResponse<SmartReply[] | { replies: SmartReply[] } | SmartReply>(response);
+    console.log('✅ Parsed response:', JSON.stringify(parsed).substring(0, 200));
+    
+    // Handle multiple response formats
+    let replies: SmartReply[];
+    if (Array.isArray(parsed)) {
+      // Format 1: Direct array [{ text, type, confidence }, ...]
+      replies = parsed;
+      console.log('📋 Format: Direct array with', replies.length, 'replies');
+    } else if (parsed && typeof parsed === 'object' && 'replies' in parsed) {
+      // Format 2: Object wrapper { replies: [...] }
+      replies = parsed.replies;
+      console.log('📋 Format: Object wrapper with', replies.length, 'replies');
+    } else if (parsed && typeof parsed === 'object' && 'text' in parsed && 'type' in parsed) {
+      // Format 3: Single reply object { text, type, confidence }
+      console.log('📋 Format: Single reply object - wrapping in array');
+      replies = [parsed as SmartReply];
+    } else {
+      console.warn('❌ Invalid smart replies response format:', JSON.stringify(parsed).substring(0, 200));
+      return [];
+    }
+
+    // Validate and filter valid replies
+    const validReplies = replies.filter(r => 
+      r && typeof r === 'object' && 
+      typeof r.text === 'string' && 
+      typeof r.type === 'string' &&
+      typeof r.confidence === 'number'
+    );
+
+    if (validReplies.length === 0) {
+      console.warn('No valid replies found in response');
+      return [];
+    }
 
     // Sort by confidence and return top N
-    return replies
+    return validReplies
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, count);
   } catch (error) {
     console.error('Smart replies generation error:', error);
-    throw error;
+    // Return empty array instead of throwing to prevent UI crashes
+    return [];
   }
 }
 
@@ -181,7 +233,7 @@ function detectResponseSpeed(messages: Message[]): 'slow' | 'moderate' | 'fast' 
   let gapCount = 0;
 
   for (let i = 1; i < messages.length; i++) {
-    const gap = messages[i].timestamp.getTime() - messages[i - 1].timestamp.getTime();
+    const gap = getTime(messages[i].timestamp) - getTime(messages[i - 1].timestamp);
     if (gap < 3600000) { // Only count gaps under 1 hour
       totalGap += gap;
       gapCount++;

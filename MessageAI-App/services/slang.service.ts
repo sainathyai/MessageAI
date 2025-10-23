@@ -3,10 +3,8 @@
  * Detects and explains slang terms, idioms, and colloquialisms using OpenAI
  */
 
-import { callOpenAI } from './ai.service';
+import { callOpenAI, createMessages, parseJSONResponse } from './ai.service';
 import { SlangTerm, AIError } from '../types/ai.types';
-
-const SLANG_MODEL = 'gpt-4o-mini';
 
 /**
  * Detect and explain slang terms and idioms in a message
@@ -23,7 +21,9 @@ export const detectSlangAndIdioms = async (
     } as AIError;
   }
 
-  const prompt = `Analyze the following text and identify any slang terms, idioms, or colloquialisms that might be difficult for a non-native speaker to understand.
+  const systemPrompt = `You are a linguistic expert specializing in slang, idioms, and colloquialisms. Analyze text and explain terms that might be difficult for non-native speakers.`;
+
+  const userPrompt = `Analyze the following text and identify any slang terms, idioms, or colloquialisms that might be difficult for a non-native speaker to understand.
 
 For each term found, provide:
 - term: the exact slang/idiom phrase as it appears
@@ -37,20 +37,34 @@ For each term found, provide:
 
 If NO slang, idioms, or colloquialisms are found, return an empty array.
 
-Return a JSON object with a "terms" array.
+Return ONLY valid JSON in this format:
+{
+  "terms": [
+    {
+      "term": "example",
+      "type": "slang",
+      "explanation": "...",
+      "literalMeaning": "...",
+      "actualMeaning": "...",
+      "example": "...",
+      "region": "...",
+      "formality": "casual"
+    }
+  ]
+}
 
 Language: ${detectedLanguage}
 Text: "${text}"`;
 
   try {
-    const result = await callOpenAI<{ terms: SlangTerm[] }>(
-      prompt,
-      SLANG_MODEL,
-      1500,
-      0.5,
-      { type: 'json_object' }
-    );
+    const messages = createMessages(systemPrompt, userPrompt);
+    const response = await callOpenAI(messages, {
+      temperature: 0.5,
+      maxTokens: 1500,
+      responseFormat: 'json',
+    });
 
+    const result = parseJSONResponse<{ terms: SlangTerm[] }>(response);
     return result.terms || [];
   } catch (error) {
     console.error('Error detecting slang and idioms:', error);
@@ -73,18 +87,18 @@ export const explainSlangTerm = async (
     } as AIError;
   }
 
+  const systemPrompt = `You are a linguistic expert. Provide brief, clear explanations of slang terms and idioms.`;
   const contextPrompt = context ? `\nContext: "${context}"` : '';
-  const prompt = `Provide a brief, clear explanation of the slang term or idiom: "${term}".${contextPrompt}
+  const userPrompt = `Provide a brief, clear explanation of the slang term or idiom: "${term}".${contextPrompt}
 
 Return a plain text explanation in 1-2 sentences.`;
 
   try {
-    const explanation = await callOpenAI<string>(
-      prompt,
-      SLANG_MODEL,
-      200,
-      0.3
-    );
+    const messages = createMessages(systemPrompt, userPrompt);
+    const explanation = await callOpenAI(messages, {
+      temperature: 0.3,
+      maxTokens: 200,
+    });
 
     return explanation;
   } catch (error) {

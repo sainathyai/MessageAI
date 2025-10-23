@@ -9,6 +9,7 @@ import { AIError } from '../types/ai.types';
 // Initialize OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true, // Required for React Native
 });
 
 // Configuration
@@ -140,9 +141,40 @@ export function createMessages(
  */
 export function parseJSONResponse<T>(response: string): T {
   try {
+    // Try direct parse first
     return JSON.parse(response);
   } catch (error) {
-    console.error('Failed to parse JSON response:', response);
+    // OpenAI sometimes wraps JSON in markdown code blocks
+    // Try to extract JSON from markdown
+    const jsonMatch = response.match(/```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[1]);
+      } catch (e) {
+        // Continue to error handling
+      }
+    }
+
+    // Try to find JSON array or object without markdown
+    const arrayMatch = response.match(/(\[[\s\S]*\])/);
+    if (arrayMatch) {
+      try {
+        return JSON.parse(arrayMatch[1]);
+      } catch (e) {
+        // Continue to error handling
+      }
+    }
+
+    const objectMatch = response.match(/(\{[\s\S]*\})/);
+    if (objectMatch) {
+      try {
+        return JSON.parse(objectMatch[1]);
+      } catch (e) {
+        // Continue to error handling
+      }
+    }
+
+    console.error('Failed to parse JSON response. Response:', response.substring(0, 500));
     throw {
       code: 'API_ERROR',
       message: 'Invalid response format from AI service.',

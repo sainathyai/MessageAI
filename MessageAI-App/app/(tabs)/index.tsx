@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Conversation, User } from '../../types';
@@ -28,10 +29,12 @@ import { UserSearch } from '../../components/UserSearch';
 import { scheduleLocalNotification } from '../../services/notification.service';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { getTime, toDate } from '../../utils/dateFormat';
 
 export default function ChatsScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchVisible, setSearchVisible] = useState(false);
@@ -50,7 +53,10 @@ export default function ChatsScreen() {
     const userData = await getUserData(userId);
     if (userData) {
       // Save to cache for next time
-      await saveUserToCache(userData);
+      await saveUserToCache({
+        ...userData,
+        lastSeen: toDate(userData.lastSeen)
+      });
       return userData.displayName;
     }
 
@@ -107,7 +113,7 @@ export default function ChatsScreen() {
           if (convo.lastMessage && 
               convo.lastMessage.senderId !== user.uid &&
               (!prevConvo?.lastMessage || 
-               prevConvo.lastMessage.timestamp.getTime() < convo.lastMessage.timestamp.getTime())) {
+               getTime(prevConvo.lastMessage.timestamp) < getTime(convo.lastMessage.timestamp))) {
             
             // Get sender name
             let senderName = 'Someone';
@@ -218,47 +224,53 @@ export default function ChatsScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chats</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            style={styles.groupButton}
-            onPress={() => router.push('/group/create')}
-          >
-            <Text style={styles.groupButtonText}>👥 Group</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.newChatButton}
-            onPress={() => setSearchVisible(true)}
-          >
-            <Text style={styles.newChatButtonText}>+</Text>
-          </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Chats</Text>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.groupButton}
+              onPress={() => router.push('/group/create')}
+            >
+              <Text style={styles.groupButtonText}>👥 Group</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.newChatButton}
+              onPress={() => setSearchVisible(true)}
+            >
+              <Text style={styles.newChatButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* Conversation List */}
+        <FlatList
+          data={conversations}
+          keyExtractor={(item) => item.id}
+          renderItem={renderConversationItem}
+          ListEmptyComponent={renderEmptyState}
+          contentContainerStyle={conversations.length === 0 ? styles.emptyList : undefined}
+        />
+
+        {/* User Search Modal */}
+        <UserSearch
+          visible={searchVisible}
+          currentUserId={user?.uid || ''}
+          onClose={() => setSearchVisible(false)}
+          onUserSelect={handleUserSelect}
+        />
       </View>
-
-      {/* Conversation List */}
-      <FlatList
-        data={conversations}
-        keyExtractor={(item) => item.id}
-        renderItem={renderConversationItem}
-        ListEmptyComponent={renderEmptyState}
-        contentContainerStyle={conversations.length === 0 ? styles.emptyList : undefined}
-      />
-
-      {/* User Search Modal */}
-      <UserSearch
-        visible={searchVisible}
-        currentUserId={user?.uid || ''}
-        onClose={() => setSearchVisible(false)}
-        onUserSelect={handleUserSelect}
-      />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.PRIMARY,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
@@ -273,16 +285,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: COLORS.WHITE,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.LIGHT_GRAY,
-    paddingTop: 50, // Account for status bar
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.PRIMARY,
+    minHeight: 60,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.TEXT_PRIMARY,
+    color: COLORS.WHITE,
   },
   headerButtons: {
     flexDirection: 'row',
@@ -293,10 +304,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: COLORS.LIGHT_BLUE,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   groupButtonText: {
-    color: COLORS.PRIMARY,
+    color: COLORS.WHITE,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -304,12 +317,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: COLORS.WHITE,
     justifyContent: 'center',
     alignItems: 'center',
   },
   newChatButtonText: {
-    color: COLORS.WHITE,
+    color: COLORS.PRIMARY,
     fontSize: 28,
     fontWeight: '300',
   },

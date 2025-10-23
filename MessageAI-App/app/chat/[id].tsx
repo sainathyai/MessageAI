@@ -8,9 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  SafeAreaView,
   Alert,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { OptimisticMessage } from '../../types';
@@ -37,6 +37,7 @@ import { useAISettings } from '../../hooks/useAISettings';
 import { generateSmartReplies, learnCommunicationStyle } from '../../services/smart-replies.service';
 import { SmartReply } from '../../types/ai.types';
 import { isAIConfigured } from '../../services/ai.service';
+import { getTime, toDate } from '../../utils/dateFormat';
 
 export default function ChatScreen() {
   const router = useRouter();
@@ -44,6 +45,13 @@ export default function ChatScreen() {
   const { user } = useAuth();
   const flatListRef = useRef<FlatList>(null);
   const { settings: aiSettings } = useAISettings();
+  const insets = useSafeAreaInsets();
+  
+  // Capture initial bottom inset ONCE using ref (never changes)
+  const fixedBottomInsetRef = useRef<number | null>(null);
+  if (fixedBottomInsetRef.current === null) {
+    fixedBottomInsetRef.current = Platform.OS === 'android' ? Math.max(insets.bottom, 20) : 0;
+  }
 
   const [messages, setMessages] = useState<OptimisticMessage[]>([]);
   const [firestoreMessages, setFirestoreMessages] = useState<OptimisticMessage[]>([]);
@@ -83,7 +91,7 @@ export default function ChatScreen() {
       const hasFirestoreMatch = firestoreMessages.some(fs => 
         fs.text.trim() === opt.text.trim() && 
         fs.senderId === opt.senderId &&
-        Math.abs(fs.timestamp.getTime() - opt.timestamp.getTime()) < 10000
+        Math.abs(getTime(fs.timestamp) - getTime(opt.timestamp)) < 10000
       );
       
       // Remove if Firestore has it
@@ -97,7 +105,7 @@ export default function ChatScreen() {
     
     // Add Firestore messages first (they're the source of truth)
     firestoreMessages.forEach(msg => {
-      const signature = `${msg.senderId}-${msg.text.trim()}-${Math.floor(msg.timestamp.getTime() / 1000)}`;
+      const signature = `${msg.senderId}-${msg.text.trim()}-${Math.floor(getTime(msg.timestamp) / 1000)}`;
       if (!seen.has(signature)) {
         seen.add(signature);
         allMessages.push(msg);
@@ -106,7 +114,7 @@ export default function ChatScreen() {
     
     // Add active optimistic messages (only if not already in Firestore)
     activeOptimistic.forEach(msg => {
-      const signature = `${msg.senderId}-${msg.text.trim()}-${Math.floor(msg.timestamp.getTime() / 1000)}`;
+      const signature = `${msg.senderId}-${msg.text.trim()}-${Math.floor(getTime(msg.timestamp) / 1000)}`;
       if (!seen.has(signature)) {
         seen.add(signature);
         allMessages.push(msg);
@@ -114,7 +122,7 @@ export default function ChatScreen() {
     });
     
     // Sort by timestamp (newest first for inverted FlatList)
-    allMessages.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    allMessages.sort((a, b) => getTime(b.timestamp) - getTime(a.timestamp));
 
     setMessages(allMessages);
   }, [firestoreMessages, optimisticMessages]);
@@ -266,7 +274,10 @@ export default function ChatScreen() {
           if (userData) {
             setOtherUserName(userData.displayName);
             // Save to cache for next time
-            await saveUserToCache(userData);
+            await saveUserToCache({
+              ...userData,
+              lastSeen: toDate(userData.lastSeen)
+            });
           }
         }
       } else if (conversation?.isGroup) {
@@ -303,11 +314,14 @@ export default function ChatScreen() {
     }
 
     // Don't generate for own messages (last message must be from someone else)
-    const lastMessage = messages[messages.length - 1];
-    if (lastMessage.senderId === user.uid) {
+    // Messages are inverted (newest first at index 0)
+    const lastMessage = messages[0];
+    if (!lastMessage || lastMessage.senderId === user.uid) {
       setSmartReplies([]);
       return;
     }
+    
+    console.log('💡 Smart replies conditions met - generating...');
 
     // Debounce: Clear any existing timeout
     if (smartRepliesTimeoutRef.current) {
@@ -324,7 +338,7 @@ export default function ChatScreen() {
         const userStyle = learnCommunicationStyle(
           messages.map(m => ({
             ...m,
-            timestamp: m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp),
+            timestamp: toDate(m.timestamp) || new Date(),
           })),
           user.uid
         );
@@ -333,7 +347,7 @@ export default function ChatScreen() {
         const replies = await generateSmartReplies(
           messages.slice(-10).map(m => ({
             ...m,
-            timestamp: m.timestamp instanceof Date ? m.timestamp : new Date(m.timestamp),
+            timestamp: toDate(m.timestamp) || new Date(),
           })),
           userStyle,
           3
@@ -341,8 +355,23 @@ export default function ChatScreen() {
 
         setSmartReplies(replies);
       } catch (error: any) {
-        console.error('Error generating smart replies:', error);
-        setSmartRepliesError(error.message || 'Failed to generate replies');
+        console.error('Smart replies generation error:', error);
+        
+        // Provide friendly error messages
+        let friendlyMessage: string | null = 'Failed to generate replies';
+        
+        if (error.code === 'RATE_LIMIT_EXCEEDED') {
+          friendlyMessage = 'Too many requests. Please wait a moment.';
+        } else if (error.code === 'API_KEY_INVALID') {
+          friendlyMessage = 'AI service not configured properly';
+        } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('network')) {
+          friendlyMessage = 'Network issue. Check your connection.';
+        } else if (error.code === 'API_ERROR') {
+          // Don't show technical API errors to user
+          friendlyMessage = null;
+        }
+        
+        setSmartRepliesError(friendlyMessage);
       } finally {
         setLoadingSmartReplies(false);
       }
@@ -518,30 +547,15 @@ export default function ChatScreen() {
     </View>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Text style={styles.backButtonText}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{otherUserName}</Text>
-          <View style={styles.backButton} />
-        </View>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-        </View>
-      </View>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.outerContainer}>
+        <KeyboardAvoidingView
+          style={styles.container}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          enabled={true}
+        >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -549,7 +563,7 @@ export default function ChatScreen() {
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>{otherUserName}</Text>
-            {isGroup ? (
+            {!loading && isGroup ? (
               <TouchableOpacity 
                 style={styles.statusContainer}
                 onPress={() => setShowGroupMembers(true)}
@@ -557,7 +571,7 @@ export default function ChatScreen() {
                 <Text style={styles.statusText}>{participantCount} members</Text>
                 <Text style={styles.statusText}> 👥</Text>
               </TouchableOpacity>
-            ) : otherUserId && (
+            ) : !loading && otherUserId && (
               <View style={styles.statusContainer}>
                 {isOtherUserOnline && (
                   <>
@@ -571,7 +585,7 @@ export default function ChatScreen() {
               </View>
             )}
           </View>
-          {isGroup ? (
+          {!loading && isGroup ? (
             <TouchableOpacity
               style={styles.groupInfoButton}
               onPress={() => setShowGroupMembers(true)}
@@ -583,14 +597,19 @@ export default function ChatScreen() {
           )}
         </View>
 
-        {/* Messages List */}
-        <FlatList
+        {/* Loading or Messages List */}
+        {loading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+          </View>
+        ) : (
+          <FlatList
           ref={flatListRef}
           data={messages}
           keyExtractor={(item) => {
             // Use a stable key that doesn't change when optimistic → real message
             // This prevents React from unmounting/remounting the component
-            const signature = `${item.senderId}-${item.text.trim()}-${Math.floor(item.timestamp.getTime() / 1000)}`;
+            const signature = `${item.senderId}-${item.text.trim()}-${Math.floor(getTime(item.timestamp) / 1000)}`;
             return signature;
           }}
           renderItem={renderMessage}
@@ -605,6 +624,7 @@ export default function ChatScreen() {
             autoscrollToTopThreshold: 100,
           }}
         />
+        )}
 
         {/* Typing Indicator */}
         <TypingIndicator typingUsers={typingUsers} />
@@ -623,6 +643,11 @@ export default function ChatScreen() {
         <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
       </KeyboardAvoidingView>
 
+      {/* Fixed bottom safe area for Android navigation */}
+      {Platform.OS === 'android' && <View style={[styles.bottomSafeArea, { height: fixedBottomInsetRef.current }]} />}
+      
+      </View>
+
       {/* Group Members Modal */}
       <GroupMembersModal
         visible={showGroupMembers}
@@ -640,9 +665,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.PRIMARY,
   },
+  outerContainer: {
+    flex: 1,
+    backgroundColor: COLORS.BACKGROUND,
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND,
+  },
+  bottomSafeArea: {
+    backgroundColor: COLORS.PRIMARY,
   },
   centerContainer: {
     flex: 1,
@@ -653,9 +685,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: COLORS.PRIMARY,
-    paddingTop: 50, // Account for status bar
+    minHeight: 60,
   },
   backButton: {
     width: 40,
@@ -673,14 +706,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
     color: COLORS.WHITE,
   },
   statusContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: 1,
   },
   onlineDot: {
     width: 8,
