@@ -316,7 +316,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
 const styles = StyleSheet.create({
   container: {
     marginBottom: Spacing.md,
-    maxWidth: '75%',
+    maxWidth: '70%', // Smaller bubbles (was 75%)
   },
   ownMessageContainer: {
     alignSelf: 'flex-end',
@@ -331,17 +331,17 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxs,
   },
   bubble: {
-    paddingHorizontal: Spacing.default,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: BorderRadius.lg, // 20px for modern, soft feel
+    paddingHorizontal: Spacing.md + 2, // More compact (was 16, now 14)
+    paddingVertical: Spacing.sm + 1,    // More compact (was 10, now 9)
+    borderRadius: BorderRadius.lg,      // 20px main corners
   },
   ownBubble: {
     backgroundColor: Colors.outgoingBubble, // Teal theme
-    borderBottomRightRadius: BorderRadius.xs, // Small tail
+    borderBottomRightRadius: 2,             // Sharp tail pointing out
   },
   otherBubble: {
     backgroundColor: Colors.incomingBubble, // Light gray
-    borderBottomLeftRadius: BorderRadius.xs, // Small tail
+    borderBottomLeftRadius: 2,              // Sharp tail pointing out
   },
   failedBubble: {
     opacity: 0.7,

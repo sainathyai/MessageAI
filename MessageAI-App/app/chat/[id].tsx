@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { OptimisticMessage } from '../../types';
 import { COLORS } from '../../utils/constants';
+import { Colors } from '../../constants';
 import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered } from '../../services/message.service';
 import { getConversation, markConversationAsRead } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
@@ -600,7 +601,7 @@ export default function ChatScreen() {
         {/* Loading or Messages List */}
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <ActivityIndicator size="large" color={Colors.primary} />
           </View>
         ) : (
           <FlatList
@@ -663,18 +664,18 @@ export default function ChatScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Changed to teal
   },
   outerContainer: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: Colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: Colors.background,
   },
   bottomSafeArea: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Changed to teal
   },
   centerContainer: {
     flex: 1,
@@ -687,7 +688,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Changed to teal
     minHeight: 60,
   },
   backButton: {
@@ -698,7 +699,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 28,
-    color: COLORS.WHITE,
+    color: Colors.white,
   },
   headerInfo: {
     flex: 1,
@@ -708,7 +709,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: COLORS.WHITE,
+    color: Colors.white,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -719,14 +720,14 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#4ADE80',
+    backgroundColor: Colors.online, // Using theme green
     marginRight: 4,
     borderWidth: 1,
-    borderColor: COLORS.WHITE,
+    borderColor: Colors.white,
   },
   statusText: {
     fontSize: 12,
-    color: COLORS.WHITE,
+    color: Colors.white,
     opacity: 0.9,
   },
   messagesList: {
@@ -745,12 +746,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: COLORS.TEXT_PRIMARY,
+    color: Colors.textPrimary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
   groupInfoButton: {

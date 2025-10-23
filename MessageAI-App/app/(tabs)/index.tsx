@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Conversation, User } from '../../types';
 import { COLORS } from '../../utils/constants';
+import { Colors } from '../../constants';
 import { 
   subscribeToConversations, 
   getOrCreateConversation 
@@ -269,17 +270,17 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Changed to teal
   },
   container: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
+    backgroundColor: Colors.background,
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.WHITE,
+    backgroundColor: Colors.white,
   },
   header: {
     flexDirection: 'row',
@@ -287,13 +288,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Changed to teal
     minHeight: 60,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.WHITE,
+    color: Colors.white,
   },
   headerButtons: {
     flexDirection: 'row',
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   groupButtonText: {
-    color: COLORS.WHITE,
+    color: Colors.white,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -317,12 +318,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.WHITE,
+    backgroundColor: Colors.white,
     justifyContent: 'center',
     alignItems: 'center',
   },
   newChatButtonText: {
-    color: COLORS.PRIMARY,
+    color: Colors.primary, // Changed to teal
     fontSize: 28,
     fontWeight: '300',
   },
@@ -338,13 +339,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: COLORS.TEXT_PRIMARY,
+    color: Colors.textPrimary,
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
     fontSize: 16,
-    color: COLORS.TEXT_SECONDARY,
+    color: Colors.textSecondary,
     textAlign: 'center',
   },
 });
