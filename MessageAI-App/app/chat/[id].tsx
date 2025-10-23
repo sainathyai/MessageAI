@@ -533,6 +533,7 @@ export default function ChatScreen() {
         <MessageBubble 
           message={item} 
           isOwnMessage={isOwnMessage}
+          isGroupChat={isGroup}
           userPreferredLanguage={aiSettings.preferredLanguage}
           autoTranslate={aiSettings.autoTranslate}
           showCulturalHints={aiSettings.showCulturalHints}
@@ -542,7 +543,7 @@ export default function ChatScreen() {
   };
 
   const renderEmptyState = () => (
-    <View style={[styles.emptyContainer, { transform: [{ scaleY: -1 }] }]}>
+    <View style={styles.emptyContainer}>
       <Text style={styles.emptyText}>No messages yet</Text>
       <Text style={styles.emptySubtext}>Send a message to start the conversation!</Text>
     </View>
