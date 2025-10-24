@@ -4,6 +4,8 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import { ThemeProvider } from '../contexts/ThemeContext';
 import { View, ActivityIndicator, StyleSheet, Image, Text } from 'react-native';
 import { COLORS } from '../utils/constants';
+import { initVideoCache } from '../services/video-cache.service';
+import { initDatabase } from '../services/storage.service';
 
 /**
  * Root navigation logic component
@@ -51,6 +53,20 @@ function RootLayoutNav() {
  * Root layout with AuthProvider and ThemeProvider
  */
 export default function RootLayout() {
+  useEffect(() => {
+    // Initialize database and caches
+    const init = async () => {
+      try {
+        initDatabase();
+        await initVideoCache();
+        console.log('✅ App initialization complete');
+      } catch (error) {
+        console.error('❌ Error initializing app:', error);
+      }
+    };
+    init();
+  }, []);
+
   return (
     <ThemeProvider>
       <AuthProvider>

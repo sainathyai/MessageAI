@@ -19,7 +19,7 @@ import { updateConversationLastMessage } from './conversation.service';
 import { sendMessageNotification } from './push-notification-sender.service';
 import { getTime } from '../utils/dateFormat';
 import type { UploadProgress } from './cloud-storage.service';
-import { uploadImageToS3 } from './cloud-storage.service';
+import { uploadImageToS3, uploadVideoToS3 } from './cloud-storage.service';
 
 /**
  * Send a message to a conversation
@@ -395,7 +395,7 @@ export const sendImageMessage = async (
       type: 'image',
       imageUrl: uploadResult.url,
       media: {
-        cloudUri: uploadResult.url,
+        cloudUrl: uploadResult.url,
         width,
         height,
         size: uploadResult.size,
@@ -423,6 +423,95 @@ export const sendImageMessage = async (
   } catch (error) {
     console.error('❌ Error sending image message:', error);
     throw new Error(`Failed to send image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Send a video message with cloud upload
+ */
+export const sendVideoMessage = async (
+  conversationId: string,
+  localVideoUri: string,
+  localThumbnailUri: string,
+  senderId: string,
+  senderName: string,
+  duration: number,
+  width: number,
+  height: number,
+  caption?: string,
+  onProgress?: (progress: UploadProgress) => void
+): Promise<string> => {
+  try {
+    // Generate unique filenames
+    const videoFilename = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.mp4`;
+    const thumbnailFilename = `thumb_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+    
+    // Upload video to S3
+    console.log('📤 Uploading video to S3...');
+    const videoUploadResult = await uploadVideoToS3(
+      localVideoUri,
+      videoFilename,
+      'video/mp4',
+      onProgress
+    );
+    
+    console.log('✅ Video S3 upload complete:', videoUploadResult.url);
+    
+    // Upload thumbnail to S3 (if provided)
+    let thumbnailUrl = '';
+    if (localThumbnailUri) {
+      console.log('📤 Uploading thumbnail to S3...');
+      const thumbnailUploadResult = await uploadImageToS3(
+        localThumbnailUri,
+        thumbnailFilename,
+        'image/jpeg'
+      );
+      thumbnailUrl = thumbnailUploadResult.url;
+      console.log('✅ Thumbnail S3 upload complete:', thumbnailUrl);
+    }
+    
+    // Save message to Firestore with S3 URLs
+    const messagesRef = collection(db, COLLECTIONS.MESSAGES);
+    
+    const messageData = {
+      conversationId,
+      text: caption || '',
+      senderId,
+      senderName,
+      timestamp: serverTimestamp(),
+      status: 'sent',
+      type: 'video',
+      media: {
+        cloudUrl: videoUploadResult.url,
+        thumbnailUrl: thumbnailUrl,
+        duration,
+        width,
+        height,
+        size: videoUploadResult.size,
+        mimeType: 'video/mp4',
+        filename: videoUploadResult.key,
+      },
+    };
+
+    const docRef = await addDoc(messagesRef, messageData);
+
+    // Update conversation's last message
+    await updateConversationLastMessage(conversationId, {
+      text: caption || '🎥 Video',
+      senderId,
+      timestamp: new Date()
+    });
+
+    // Send push notification
+    sendMessageNotification(conversationId, senderId, senderName, caption || '🎥 Video')
+      .catch(error => {
+        console.error('Push notification failed (non-blocking):', error);
+      });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error sending video message:', error);
+    throw new Error(`Failed to send video: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

@@ -7,6 +7,8 @@ import { OptimisticMessage } from '../types';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants';
 import { Avatar } from './Avatar';
 import { ImageMessage } from './ImageMessage';
+import { VideoMessage } from './VideoMessage';
+import { VideoPlayer } from './VideoPlayer';
 import dayjs from 'dayjs';
 import { toDate } from '../utils/dateFormat';
 import { translateMessage, detectLanguage } from '../services/translation.service';
@@ -58,6 +60,8 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showTime, setShowTime] = useState(false);
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [videoPlayerUri, setVideoPlayerUri] = useState('');
 
   const timeString = dayjs(toDate(message.timestamp)).format('h:mm A');
 
@@ -223,17 +227,46 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
             />
           </View>
           <View style={styles.bubbleWrapper}>
-            {/* Image Message (outside bubble) */}
-            {message.type === 'image' && (message.media?.localUri || message.imageUrl) ? (
+            {/* Video Message (outside bubble) */}
+            {message.type === 'video' && message.media ? (
+              <>
+                <VideoMessage
+                  videoUri={message.media.cloudUrl || message.media.localUri || ''}
+                  thumbnailUri={message.media.thumbnailUrl}
+                  duration={message.media.duration || 0}
+                  width={message.media.width}
+                  height={message.media.height}
+                  isOwnMessage={isOwnMessage}
+                  onPress={() => {
+                    setVideoPlayerUri(message.media?.cloudUrl || message.media?.localUri || '');
+                    setShowVideoPlayer(true);
+                  }}
+                />
+                {message.text && message.text.trim().length > 0 && (
+                  <>
+                    <View style={[styles.triangleTail, isOwnMessage ? styles.triangleTailRight : styles.triangleTailLeft, { borderLeftColor: isOwnMessage ? Colors.outgoingBubble : undefined, borderRightColor: !isOwnMessage ? Colors.incomingBubble : undefined }]} />
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => setShowTime(!showTime)}
+                      style={[styles.bubble, isOwnMessage ? styles.ownBubble : styles.otherBubble, styles.captionBubble]}
+                    >
+                      <Text style={[styles.text, isOwnMessage ? styles.ownText : styles.otherText, styles.captionText]}>
+                        {message.text}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            ) : message.type === 'image' && (message.media?.localUri || message.imageUrl) ? (
               <>
                 {console.log('🖼️ Rendering image message (group):', {
                   type: message.type,
                   imageUrl: message.imageUrl,
-                  cloudUri: message.media?.cloudUri,
+                  cloudUrl: message.media?.cloudUrl,
                   localUri: message.media?.localUri,
                   width: message.media?.width,
                   height: message.media?.height,
-                  finalUri: message.imageUrl || message.media?.cloudUri || message.media?.localUri || 'EMPTY'
+                  finalUri: message.imageUrl || message.media?.cloudUrl || message.media?.localUri || 'EMPTY'
                 })}
                 <TouchableOpacity
                   activeOpacity={0.8}
@@ -247,7 +280,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                   style={styles.imageContainer}
                 >
                   <ImageMessage
-                    imageUri={message.imageUrl || message.media?.cloudUri || message.media?.localUri || ''}
+                    imageUri={message.imageUrl || message.media?.cloudUrl || message.media?.localUri || ''}
                     width={message.media?.width}
                     height={message.media?.height}
                     isOwnMessage={isOwnMessage}
@@ -318,17 +351,46 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         </View>
       ) : (
         <View style={styles.bubbleWrapper}>
-          {/* Image Message (outside bubble) */}
-          {message.type === 'image' && (message.media?.localUri || message.imageUrl) ? (
+          {/* Video Message (outside bubble) */}
+          {message.type === 'video' && message.media ? (
+            <>
+              <VideoMessage
+                videoUri={message.media.cloudUrl || message.media.localUri || ''}
+                thumbnailUri={message.media.thumbnailUrl}
+                duration={message.media.duration || 0}
+                width={message.media.width}
+                height={message.media.height}
+                isOwnMessage={isOwnMessage}
+                onPress={() => {
+                  setVideoPlayerUri(message.media?.cloudUrl || message.media?.localUri || '');
+                  setShowVideoPlayer(true);
+                }}
+              />
+              {message.text && message.text.trim().length > 0 && (
+                <>
+                  <View style={[styles.triangleTail, isOwnMessage ? styles.triangleTailRight : styles.triangleTailLeft, { borderLeftColor: isOwnMessage ? Colors.outgoingBubble : undefined, borderRightColor: !isOwnMessage ? Colors.incomingBubble : undefined }]} />
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setShowTime(!showTime)}
+                    style={[styles.bubble, isOwnMessage ? styles.ownBubble : styles.otherBubble, styles.captionBubble]}
+                  >
+                    <Text style={[styles.text, isOwnMessage ? styles.ownText : styles.otherText, styles.captionText]}>
+                      {message.text}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </>
+          ) : message.type === 'image' && (message.media?.localUri || message.imageUrl) ? (
             <>
               {console.log('🖼️ Rendering image message:', {
                 type: message.type,
                 imageUrl: message.imageUrl,
-                cloudUri: message.media?.cloudUri,
+                cloudUrl: message.media?.cloudUrl,
                 localUri: message.media?.localUri,
                 width: message.media?.width,
                 height: message.media?.height,
-                finalUri: message.imageUrl || message.media?.cloudUri || message.media?.localUri || 'EMPTY'
+                finalUri: message.imageUrl || message.media?.cloudUrl || message.media?.localUri || 'EMPTY'
               })}
               <TouchableOpacity
                 activeOpacity={0.8}
@@ -342,7 +404,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                 style={styles.imageContainer}
               >
                 <ImageMessage
-                  imageUri={message.imageUrl || message.media?.cloudUri || message.media?.localUri || ''}
+                  imageUri={message.imageUrl || message.media?.cloudUrl || message.media?.localUri || ''}
                   width={message.media?.width}
                   height={message.media?.height}
                   isOwnMessage={isOwnMessage}
@@ -454,6 +516,19 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         position={menuPosition}
         isOwnMessage={isOwnMessage}
       />
+
+      {/* Video Player Modal */}
+      {videoPlayerUri && (
+        <VideoPlayer
+          visible={showVideoPlayer}
+          videoUri={videoPlayerUri}
+          onClose={() => {
+            setShowVideoPlayer(false);
+            setVideoPlayerUri('');
+          }}
+          autoPlay={true}
+        />
+      )}
     </View>
   );
 };

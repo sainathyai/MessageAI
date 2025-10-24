@@ -16,6 +16,8 @@ import { AttachmentMenu } from './AttachmentMenu';
 import { FormalityAdjustmentModal } from './FormalityAdjustmentModal';
 import { ImagePicker } from './ImagePicker';
 import { ImagePreview, ImagePreviewItem } from './ImagePreview';
+import { VideoPicker } from './VideoPicker';
+import { VideoPreview } from './VideoPreview';
 import { adjustFormality } from '../services/context.service';
 import { FormalityLevel } from '../types/ai.types';
 import { useTheme } from '../contexts/ThemeContext';
@@ -24,6 +26,7 @@ interface MessageInputProps {
   onSend: (text: string) => void;
   onSendImage?: (imageUri: string, width: number, height: number, caption?: string) => void;
   onSendImages?: (images: Array<{ uri: string; width: number; height: number }>, caption?: string) => void;
+  onSendVideo?: (videoUri: string, duration: number, thumbnailUri: string, width: number, height: number, caption?: string) => void;
   onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
   showFormalityButton?: boolean;
@@ -33,6 +36,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onSend,
   onSendImage,
   onSendImages,
+  onSendVideo,
   onTyping,
   disabled = false,
   showFormalityButton = true,
@@ -44,6 +48,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [imagePickerSource, setImagePickerSource] = useState<'camera' | 'gallery' | null>(null);
   const [selectedImages, setSelectedImages] = useState<ImagePreviewItem[]>([]);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [videoPickerSource, setVideoPickerSource] = useState<'camera' | 'gallery' | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<{uri: string; duration: number; thumbnail: string; width: number; height: number} | null>(null);
+  const [showVideoPreview, setShowVideoPreview] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
 
@@ -155,6 +162,34 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
+  const handleVideoSelected = (videoUri: string, duration: number, thumbnailUri: string, width: number, height: number) => {
+    setVideoPickerSource(null);
+    setSelectedVideo({ uri: videoUri, duration, thumbnail: thumbnailUri, width, height });
+    setShowVideoPreview(true);
+  };
+
+  const handleSendVideo = async (caption?: string) => {
+    if (onSendVideo && selectedVideo) {
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Send video (already validated at picker stage)
+      onSendVideo(
+        selectedVideo.uri, 
+        selectedVideo.duration, 
+        selectedVideo.thumbnail, 
+        selectedVideo.width, 
+        selectedVideo.height, 
+        caption
+      );
+      
+      // Clear state
+      setSelectedVideo(null);
+      setShowVideoPreview(false);
+      setText('');
+    }
+  };
+
   // Define menu items
   const menuItems = [
     {
@@ -199,9 +234,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       icon: 'videocam' as const,
       color: '#E57373',
       onPress: () => {
-        // Future: Video recording
+        setShowAttachmentMenu(false);
+        setVideoPickerSource('gallery'); // Default to gallery for video
       },
-      disabled: true,
+      disabled: !onSendVideo,
     },
     {
       id: 'voice',
@@ -328,6 +364,40 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         }}
         onSend={handleSendImages}
       />
+
+      {/* Video Picker */}
+      {videoPickerSource && (
+        <VideoPicker
+          autoLaunch={videoPickerSource}
+          onVideoSelected={handleVideoSelected}
+          onError={(error) => {
+            console.error('Video picker error:', error);
+            setVideoPickerSource(null);
+          }}
+          maxDuration={60} // 60 seconds max
+        />
+      )}
+
+      {/* Video Preview Modal */}
+      {selectedVideo && (
+        <VideoPreview
+          visible={showVideoPreview}
+          videoUri={selectedVideo.uri}
+          thumbnailUri={selectedVideo.thumbnail}
+          duration={selectedVideo.duration}
+          onClose={() => {
+            setShowVideoPreview(false);
+            setSelectedVideo(null);
+          }}
+          onSend={handleSendVideo}
+          onReselect={() => {
+            setShowVideoPreview(false);
+            setSelectedVideo(null);
+            // Reopen gallery picker
+            setVideoPickerSource('gallery');
+          }}
+        />
+      )}
     </>
   );
 };

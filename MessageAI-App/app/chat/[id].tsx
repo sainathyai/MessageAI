@@ -18,7 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { OptimisticMessage } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { Colors } from '../../constants';
-import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered, sendImageMessage } from '../../services/message.service';
+import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered, sendImageMessage, sendVideoMessage } from '../../services/message.service';
 import { getConversation, markConversationAsRead } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
@@ -655,6 +655,104 @@ export default function ChatScreen() {
     }
   };
 
+  const handleSendVideo = async (
+    videoUri: string, 
+    duration: number, 
+    thumbnailUri: string, 
+    width: number, 
+    height: number, 
+    caption?: string
+  ) => {
+    if (!user || !id) return;
+
+    try {
+      // Check if online
+      const online = await isOnline();
+
+      if (!online) {
+        Alert.alert('Offline', 'Video upload requires an internet connection. Please try again when online.');
+        return;
+      }
+
+      // Video is already validated at picker stage (≤ 60s)
+      console.log('📹 Sending video:', {
+        duration,
+        width,
+        height,
+      });
+
+      // Create optimistic message for immediate display
+      const optimisticVideoMessage: OptimisticMessage = {
+        id: `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        conversationId: id,
+        text: caption || '',
+        senderId: user.uid,
+        senderName: user.displayName,
+        timestamp: new Date(),
+        status: 'sending',
+        type: 'video',
+        media: {
+          localUri: videoUri,
+          thumbnailUrl: thumbnailUri,
+          duration: duration,
+          width,
+          height,
+          mimeType: 'video/mp4',
+        },
+        isOptimistic: true,
+      };
+
+      // Add to optimistic messages immediately
+      setOptimisticMessages(prev => [...prev, optimisticVideoMessage]);
+
+      // Upload to S3 and save to Firestore in background
+      try {
+        await sendVideoMessage(
+          id,
+          videoUri,
+          thumbnailUri,
+          user.uid,
+          user.displayName,
+          duration,
+          width,
+          height,
+          caption,
+          (progress) => {
+            console.log(`📤 Upload progress: ${progress.percentage}%`);
+            // TODO: Update UI with upload progress
+          }
+        );
+
+        // Remove optimistic message after successful upload
+        setOptimisticMessages(prev => 
+          prev.filter(msg => msg.id !== optimisticVideoMessage.id)
+        );
+
+        console.log('✅ Video sent successfully');
+      } catch (uploadError) {
+        console.error('❌ Video upload failed:', uploadError);
+        
+        // Mark optimistic message as failed
+        setOptimisticMessages(prev =>
+          prev.map(msg =>
+            msg.id === optimisticVideoMessage.id
+              ? { 
+                  ...msg, 
+                  status: 'failed' as const, 
+                  error: uploadError instanceof Error ? uploadError.message : 'Upload failed' 
+                }
+              : msg
+          )
+        );
+
+        Alert.alert('Upload Failed', 'Failed to upload video. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error sending video:', error);
+      Alert.alert('Error', 'Failed to send video. Please try again.');
+    }
+  };
+
   const handleRetryMessage = async (message: OptimisticMessage) => {
     if (!user || !id) return;
 
@@ -855,6 +953,7 @@ export default function ChatScreen() {
           onSend={handleSendMessage} 
           onSendImage={handleSendImage}
           onSendImages={handleSendImages}
+          onSendVideo={handleSendVideo}
           onTyping={handleTyping} 
         />
       </KeyboardAvoidingView>
