@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   ScrollView,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -101,7 +102,11 @@ export default function SignupScreen() {
             {/* App Logo/Title */}
             <View style={styles.header}>
               <View style={styles.logoContainer}>
-                <Text style={styles.logoEmoji}>💬</Text>
+                <Image 
+                  source={require('../../assets/icon.png')} 
+                  style={styles.logo}
+                  resizeMode="contain"
+                />
               </View>
               <Text style={styles.appTitle}>MessageAI</Text>
               <Text style={styles.subtitle}>AI-powered messaging for everyone</Text>
@@ -224,19 +229,21 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xl * 2,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.white20,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
+    overflow: 'hidden',
   },
-  logoEmoji: {
-    fontSize: 40,
+  logo: {
+    width: 160,
+    height: 160,
   },
   appTitle: {
     fontSize: 42,
@@ -251,58 +258,58 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   card: {
-    backgroundColor: Colors.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: BorderRadius.lg,
-    padding: Spacing.xl,
+    padding: Spacing.lg + 4,
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 10,
   },
   cardTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
+    color: '#5B4FDB',
+    marginBottom: 4,
   },
   cardSubtitle: {
-    fontSize: 15,
-    color: Colors.textSecondary,
+    fontSize: 14,
+    color: '#7A7A9D',
     marginBottom: Spacing.lg,
   },
   form: {
     width: '100%',
   },
   inputContainer: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.md + 4,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: Colors.textPrimary,
-    marginBottom: Spacing.xs,
+    color: '#5A5A7A',
+    marginBottom: 6,
   },
   input: {
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: 'rgba(91, 79, 219, 0.18)',
     borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    fontSize: 16,
-    backgroundColor: Colors.white,
-    color: Colors.textPrimary,
+    padding: 12,
+    fontSize: 15,
+    backgroundColor: 'rgba(91, 79, 219, 0.05)',
+    color: '#383854',
   },
   button: {
     backgroundColor: Colors.primary,
     borderRadius: BorderRadius.md,
-    padding: Spacing.md + 2,
+    padding: 14,
     alignItems: 'center',
-    marginTop: Spacing.md,
+    marginTop: Spacing.sm,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 5,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -316,16 +323,17 @@ const styles = StyleSheet.create({
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: Spacing.lg,
+    marginTop: Spacing.xl,
   },
   loginText: {
     fontSize: 15,
-    color: Colors.textSecondary,
+    color: '#6B6B8D',
   },
   loginLink: {
     fontSize: 15,
-    color: Colors.primary,
-    fontWeight: '600',
+    color: '#5B4FDB',
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
 });
 
