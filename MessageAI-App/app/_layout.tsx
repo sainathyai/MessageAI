@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
 import { View, ActivityIndicator, StyleSheet, Image, Text } from 'react-native';
 import { COLORS } from '../utils/constants';
 
@@ -47,13 +48,15 @@ function RootLayoutNav() {
 }
 
 /**
- * Root layout with AuthProvider
+ * Root layout with AuthProvider and ThemeProvider
  */
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <RootLayoutNav />
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <RootLayoutNav />
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

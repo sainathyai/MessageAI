@@ -12,6 +12,7 @@ import {
   Switch,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { COLORS } from '../../utils/constants';
 import { Colors, Spacing, BorderRadius } from '../../constants';
 import { scheduleLocalNotification } from '../../services/notification.service';
@@ -22,6 +23,7 @@ import { useAISettings } from '../../hooks/useAISettings';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
+  const { theme, themeMode, isDark, setThemeMode } = useTheme();
   const [loading, setLoading] = useState(false);
   const { settings: aiSettings, updateSettings } = useAISettings();
   const [aiConfigured, setAIConfigured] = useState(false);
@@ -252,6 +254,40 @@ export default function ProfileScreen() {
               <Text style={styles.cardIcon}>⚙️</Text>
               <Text style={styles.cardTitle}>App Settings</Text>
             </View>
+            
+            {/* Dark Mode Toggle */}
+            <View style={styles.settingItem}>
+              <View style={styles.settingIcon}>
+                <Text style={styles.settingIconText}>{isDark ? '🌙' : '☀️'}</Text>
+              </View>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingTitle}>Dark Mode</Text>
+                <Text style={styles.settingDescription}>
+                  {themeMode === 'system' ? 'Following system settings' : themeMode === 'dark' ? 'Always dark' : 'Always light'}
+                </Text>
+              </View>
+              <View style={styles.themeSwitcher}>
+                <TouchableOpacity 
+                  style={[styles.themeButton, themeMode === 'light' && styles.themeButtonActive]}
+                  onPress={() => setThemeMode('light')}
+                >
+                  <Text style={styles.themeButtonText}>☀️</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.themeButton, themeMode === 'system' && styles.themeButtonActive]}
+                  onPress={() => setThemeMode('system')}
+                >
+                  <Text style={styles.themeButtonText}>⚙️</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.themeButton, themeMode === 'dark' && styles.themeButtonActive]}
+                  onPress={() => setThemeMode('dark')}
+                >
+                  <Text style={styles.themeButtonText}>🌙</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
             <View style={styles.actionsSection}>
               <TouchableOpacity
                 style={styles.testButton}
@@ -540,6 +576,60 @@ const styles = StyleSheet.create({
   },
   languageSelectorContainer: {
     paddingTop: 8,
+  },
+  settingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.divider,
+  },
+  settingIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: COLORS.PRIMARY + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  settingIconText: {
+    fontSize: 18,
+  },
+  settingInfo: {
+    flex: 1,
+  },
+  settingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  settingDescription: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+  },
+  themeSwitcher: {
+    flexDirection: 'row',
+    backgroundColor: Colors.surfaceSecondary,
+    borderRadius: BorderRadius.md,
+    padding: 2,
+  },
+  themeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: BorderRadius.sm,
+  },
+  themeButtonActive: {
+    backgroundColor: Colors.white,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  themeButtonText: {
+    fontSize: 18,
   },
 });
 
