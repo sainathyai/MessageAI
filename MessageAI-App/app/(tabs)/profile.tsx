@@ -155,94 +155,68 @@ export default function ProfileScreen() {
             ) : (
               <View style={styles.settingsContainer}>
                 {/* Language Preference */}
-                <View style={styles.featureCard}>
-                  <View style={styles.featureHeader}>
-                    <View style={styles.featureIconContainer}>
-                      <Text style={styles.featureIcon}>🌍</Text>
-                    </View>
-                    <View style={styles.featureHeaderText}>
-                      <Text style={styles.featureTitle}>Language Preference</Text>
-                      <Text style={styles.featureSubtitle}>Your primary communication language</Text>
-                    </View>
+                <View style={styles.settingRow}>
+                  <Text style={styles.settingRowIcon}>🌍</Text>
+                  <View style={styles.settingRowContent}>
+                    <Text style={styles.settingRowTitle}>Language</Text>
                   </View>
-                  <View style={styles.languageSelectorContainer}>
-                    <LanguageSelector
-                      selectedLanguage={aiSettings.preferredLanguage}
-                      onSelect={(code) => 
-                        updateSettings({ preferredLanguage: code })
-                      }
-                      label="Translate to:"
-                    />
-                  </View>
+                </View>
+                <View style={styles.languagePickerRow}>
+                  <LanguageSelector
+                    selectedLanguage={aiSettings.preferredLanguage}
+                    onSelect={(code) => 
+                      updateSettings({ preferredLanguage: code })
+                    }
+                    label=""
+                  />
                 </View>
 
                 {/* Auto-Translate */}
-                <View style={[styles.featureCard, aiSettings.autoTranslate && styles.featureCardActive]}>
-                  <View style={styles.featureRow}>
-                    <View style={styles.featureIconContainer}>
-                      <Text style={styles.featureIcon}>⚡</Text>
-                    </View>
-                    <View style={styles.featureInfo}>
-                      <Text style={styles.featureTitle}>Auto-Translate</Text>
-                      <Text style={styles.featureDescription}>
-                        Instantly translate incoming messages to your preferred language
-                      </Text>
-                    </View>
-                    <Switch
-                      value={aiSettings.autoTranslate}
-                      onValueChange={(value) =>
-                        updateSettings({ autoTranslate: value })
-                      }
-                      trackColor={{ false: COLORS.LIGHT_GRAY, true: COLORS.PRIMARY + '40' }}
-                      thumbColor={aiSettings.autoTranslate ? COLORS.PRIMARY : COLORS.WHITE}
-                    />
+                <View style={styles.settingRow}>
+                  <Text style={styles.settingRowIcon}>⚡</Text>
+                  <View style={styles.settingRowContent}>
+                    <Text style={styles.settingRowTitle}>Auto-Translate</Text>
                   </View>
+                  <Switch
+                    value={aiSettings.autoTranslate}
+                    onValueChange={(value) =>
+                      updateSettings({ autoTranslate: value })
+                    }
+                    trackColor={{ false: '#E5E9F0', true: '#007A7A40' }}
+                    thumbColor={aiSettings.autoTranslate ? '#007A7A' : '#f4f3f4'}
+                  />
                 </View>
 
                 {/* Cultural Context */}
-                <View style={[styles.featureCard, aiSettings.showCulturalHints && styles.featureCardActive]}>
-                  <View style={styles.featureRow}>
-                    <View style={styles.featureIconContainer}>
-                      <Text style={styles.featureIcon}>🎭</Text>
-                    </View>
-                    <View style={styles.featureInfo}>
-                      <Text style={styles.featureTitle}>Cultural Context</Text>
-                      <Text style={styles.featureDescription}>
-                        Understand references, idioms, and cultural nuances
-                      </Text>
-                    </View>
-                    <Switch
-                      value={aiSettings.showCulturalHints}
-                      onValueChange={(value) =>
-                        updateSettings({ showCulturalHints: value })
-                      }
-                      trackColor={{ false: COLORS.LIGHT_GRAY, true: COLORS.PRIMARY + '40' }}
-                      thumbColor={aiSettings.showCulturalHints ? COLORS.PRIMARY : COLORS.WHITE}
-                    />
+                <View style={styles.settingRow}>
+                  <Text style={styles.settingRowIcon}>🎭</Text>
+                  <View style={styles.settingRowContent}>
+                    <Text style={styles.settingRowTitle}>Cultural Context</Text>
                   </View>
+                  <Switch
+                    value={aiSettings.showCulturalHints}
+                    onValueChange={(value) =>
+                      updateSettings({ showCulturalHints: value })
+                    }
+                    trackColor={{ false: '#E5E9F0', true: '#007A7A40' }}
+                    thumbColor={aiSettings.showCulturalHints ? '#007A7A' : '#f4f3f4'}
+                  />
                 </View>
 
                 {/* Smart Replies */}
-                <View style={[styles.featureCard, aiSettings.smartRepliesEnabled && styles.featureCardActive]}>
-                  <View style={styles.featureRow}>
-                    <View style={styles.featureIconContainer}>
-                      <Text style={styles.featureIcon}>🤖</Text>
-                    </View>
-                    <View style={styles.featureInfo}>
-                      <Text style={styles.featureTitle}>Smart Replies</Text>
-                      <Text style={styles.featureDescription}>
-                        AI-powered suggestions that learn your communication style
-                      </Text>
-                    </View>
-                    <Switch
-                      value={aiSettings.smartRepliesEnabled}
-                      onValueChange={(value) =>
-                        updateSettings({ smartRepliesEnabled: value })
-                      }
-                      trackColor={{ false: COLORS.LIGHT_GRAY, true: COLORS.PRIMARY + '40' }}
-                      thumbColor={aiSettings.smartRepliesEnabled ? COLORS.PRIMARY : COLORS.WHITE}
-                    />
+                <View style={styles.settingRow}>
+                  <Text style={styles.settingRowIcon}>🤖</Text>
+                  <View style={styles.settingRowContent}>
+                    <Text style={styles.settingRowTitle}>Smart Replies</Text>
                   </View>
+                  <Switch
+                    value={aiSettings.smartRepliesEnabled}
+                    onValueChange={(value) =>
+                      updateSettings({ smartRepliesEnabled: value })
+                    }
+                    trackColor={{ false: '#E5E9F0', true: '#007A7A40' }}
+                    thumbColor={aiSettings.smartRepliesEnabled ? '#007A7A' : '#f4f3f4'}
+                  />
                 </View>
               </View>
             )}
@@ -288,26 +262,36 @@ export default function ProfileScreen() {
               </View>
             </View>
             
-            <View style={styles.actionsSection}>
-              <TouchableOpacity
-                style={styles.testButton}
-                onPress={handleTestNotification}
-              >
-                <Text style={styles.testButtonText}>🔔 Test Notification</Text>
-              </TouchableOpacity>
+            {/* Test Notification */}
+            <TouchableOpacity 
+              style={styles.settingRow}
+              onPress={handleTestNotification}
+            >
+              <Text style={styles.settingRowIcon}>🔔</Text>
+              <View style={styles.settingRowContent}>
+                <Text style={styles.settingRowTitle}>Test Notification</Text>
+              </View>
+              <Text style={styles.settingRowArrow}>›</Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.signOutButton}
-                onPress={handleSignOut}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color={COLORS.WHITE} />
-                ) : (
-                  <Text style={styles.signOutButtonText}>Sign Out</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            {/* Sign Out */}
+            <TouchableOpacity 
+              style={[styles.settingRow, styles.settingRowDanger]}
+              onPress={handleSignOut}
+              disabled={loading}
+            >
+              <Text style={styles.settingRowIcon}>🚪</Text>
+              <View style={styles.settingRowContent}>
+                <Text style={[styles.settingRowTitle, styles.settingRowTitleDanger]}>
+                  {loading ? 'Signing out...' : 'Sign Out'}
+                </Text>
+              </View>
+              {loading ? (
+                <ActivityIndicator size="small" color="#F44336" />
+              ) : (
+                <Text style={[styles.settingRowArrow, styles.settingRowArrowDanger]}>›</Text>
+              )}
+            </TouchableOpacity>
           </View>
 
           {/* Info */}
@@ -419,31 +403,6 @@ const styles = StyleSheet.create({
     color: COLORS.DARK_GRAY,
     fontWeight: '600',
   },
-  actionsSection: {
-    gap: Spacing.md,
-  },
-  testButton: {
-    backgroundColor: COLORS.PRIMARY,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  testButtonText: {
-    color: COLORS.WHITE,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  signOutButton: {
-    backgroundColor: COLORS.ERROR,
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  signOutButtonText: {
-    color: COLORS.WHITE,
-    fontSize: 16,
-    fontWeight: '600',
-  },
   infoSection: {
     position: 'absolute',
     bottom: 40,
@@ -512,70 +471,51 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   settingsContainer: {
-    gap: 12,
+    gap: 0,
   },
-  featureCard: {
-    backgroundColor: COLORS.WHITE,
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1.5,
-    borderColor: COLORS.LIGHT_GRAY,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  featureCardActive: {
-    borderColor: COLORS.PRIMARY,
-    backgroundColor: COLORS.PRIMARY + '08',
-  },
-  featureHeader: {
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E9F0',
+    backgroundColor: Colors.white,
   },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  settingRowIcon: {
+    fontSize: 24,
+    width: 32,
+    textAlign: 'center',
+    marginRight: Spacing.sm,
   },
-  featureIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.PRIMARY + '15',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  featureIcon: {
-    fontSize: 22,
-  },
-  featureHeaderText: {
+  settingRowContent: {
     flex: 1,
   },
-  featureInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  featureTitle: {
+  settingRowTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.DARK_GRAY,
-    marginBottom: 4,
+    fontWeight: '500',
+    color: Colors.textPrimary,
   },
-  featureSubtitle: {
-    fontSize: 13,
-    color: COLORS.GRAY,
-    lineHeight: 18,
+  settingRowArrow: {
+    fontSize: 24,
+    color: Colors.textTertiary,
+    marginLeft: Spacing.sm,
   },
-  featureDescription: {
-    fontSize: 13,
-    color: COLORS.GRAY,
-    lineHeight: 19,
+  settingRowDanger: {
+    borderBottomWidth: 0,
   },
-  languageSelectorContainer: {
-    paddingTop: 8,
+  settingRowTitleDanger: {
+    color: '#F44336',
+  },
+  settingRowArrowDanger: {
+    color: '#F44336',
+  },
+  languagePickerRow: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E9F0',
   },
   settingItem: {
     flexDirection: 'row',
@@ -632,4 +572,5 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 });
+
 
