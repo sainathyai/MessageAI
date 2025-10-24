@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { Conversation, User } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { Colors } from '../../constants';
@@ -35,6 +36,7 @@ import { getTime, toDate } from '../../utils/dateFormat';
 
 export default function ChatsScreen() {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -226,11 +228,11 @@ export default function ChatsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Chats</Text>
+        <View style={[styles.header, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Chats</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity
               style={styles.groupButton}
@@ -266,7 +268,7 @@ export default function ChatsScreen() {
 
         {/* Floating Action Button (FAB) */}
         <TouchableOpacity 
-          style={styles.fab}
+          style={[styles.fab, { backgroundColor: theme.accent }]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setSearchVisible(true);

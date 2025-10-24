@@ -94,14 +94,14 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
           {/* Profile Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.surface }]}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardIcon}>👤</Text>
-              <Text style={styles.cardTitle}>Profile</Text>
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Profile</Text>
             </View>
             <View style={styles.profileSection}>
               <Avatar 
@@ -109,8 +109,8 @@ export default function ProfileScreen() {
                 size="large"
                 isOnline={user?.isOnline}
               />
-              <Text style={styles.displayName}>{user?.displayName}</Text>
-              <Text style={styles.email}>{user?.email}</Text>
+              <Text style={[styles.displayName, { color: theme.textPrimary }]}>{user?.displayName}</Text>
+              <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email}</Text>
               
               <View style={styles.statusBadge}>
                 <View style={[styles.statusDot, user?.isOnline && styles.statusOnline]} />
@@ -122,12 +122,12 @@ export default function ProfileScreen() {
           </View>
 
           {/* AI Features Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.surface }]}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardIcon}>🤖</Text>
               <View style={styles.cardHeaderText}>
-                <Text style={styles.cardTitle}>AI-Powered Features</Text>
-                <Text style={styles.cardSubtitle}>
+                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>AI-Powered Features</Text>
+                <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
                   {aiConfigured ? 'Enhance your conversations' : 'Configuration required'}
                 </Text>
               </View>
@@ -155,13 +155,13 @@ export default function ProfileScreen() {
             ) : (
               <View style={styles.settingsContainer}>
                 {/* Language Preference */}
-                <View style={styles.settingRow}>
+                <View style={[styles.settingRow, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}>
                   <Text style={styles.settingRowIcon}>🌍</Text>
                   <View style={styles.settingRowContent}>
-                    <Text style={styles.settingRowTitle}>Language</Text>
+                    <Text style={[styles.settingRowTitle, { color: theme.textPrimary }]}>Language</Text>
                   </View>
                 </View>
-                <View style={styles.languagePickerRow}>
+                <View style={[styles.languagePickerRow, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}>
                   <LanguageSelector
                     selectedLanguage={aiSettings.preferredLanguage}
                     onSelect={(code) => 
@@ -172,50 +172,50 @@ export default function ProfileScreen() {
                 </View>
 
                 {/* Auto-Translate */}
-                <View style={styles.settingRow}>
+                <View style={[styles.settingRow, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}>
                   <Text style={styles.settingRowIcon}>⚡</Text>
                   <View style={styles.settingRowContent}>
-                    <Text style={styles.settingRowTitle}>Auto-Translate</Text>
+                    <Text style={[styles.settingRowTitle, { color: theme.textPrimary }]}>Auto-Translate</Text>
                   </View>
                   <Switch
                     value={aiSettings.autoTranslate}
                     onValueChange={(value) =>
                       updateSettings({ autoTranslate: value })
                     }
-                    trackColor={{ false: '#E5E9F0', true: '#007A7A40' }}
-                    thumbColor={aiSettings.autoTranslate ? '#007A7A' : '#f4f3f4'}
+                    trackColor={{ false: theme.surfaceSecondary, true: theme.primary + '40' }}
+                    thumbColor={aiSettings.autoTranslate ? theme.primary : '#f4f3f4'}
                   />
                 </View>
 
                 {/* Cultural Context */}
-                <View style={styles.settingRow}>
+                <View style={[styles.settingRow, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}>
                   <Text style={styles.settingRowIcon}>🎭</Text>
                   <View style={styles.settingRowContent}>
-                    <Text style={styles.settingRowTitle}>Cultural Context</Text>
+                    <Text style={[styles.settingRowTitle, { color: theme.textPrimary }]}>Cultural Context</Text>
                   </View>
                   <Switch
                     value={aiSettings.showCulturalHints}
                     onValueChange={(value) =>
                       updateSettings({ showCulturalHints: value })
                     }
-                    trackColor={{ false: '#E5E9F0', true: '#007A7A40' }}
-                    thumbColor={aiSettings.showCulturalHints ? '#007A7A' : '#f4f3f4'}
+                    trackColor={{ false: theme.surfaceSecondary, true: theme.primary + '40' }}
+                    thumbColor={aiSettings.showCulturalHints ? theme.primary : '#f4f3f4'}
                   />
                 </View>
 
                 {/* Smart Replies */}
-                <View style={styles.settingRow}>
+                <View style={[styles.settingRow, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}>
                   <Text style={styles.settingRowIcon}>🤖</Text>
                   <View style={styles.settingRowContent}>
-                    <Text style={styles.settingRowTitle}>Smart Replies</Text>
+                    <Text style={[styles.settingRowTitle, { color: theme.textPrimary }]}>Smart Replies</Text>
                   </View>
                   <Switch
                     value={aiSettings.smartRepliesEnabled}
                     onValueChange={(value) =>
                       updateSettings({ smartRepliesEnabled: value })
                     }
-                    trackColor={{ false: '#E5E9F0', true: '#007A7A40' }}
-                    thumbColor={aiSettings.smartRepliesEnabled ? '#007A7A' : '#f4f3f4'}
+                    trackColor={{ false: theme.surfaceSecondary, true: theme.primary + '40' }}
+                    thumbColor={aiSettings.smartRepliesEnabled ? theme.primary : '#f4f3f4'}
                   />
                 </View>
               </View>
@@ -223,38 +223,38 @@ export default function ProfileScreen() {
           </View>
 
           {/* App Actions Card */}
-          <View style={styles.card}>
+          <View style={[styles.card, { backgroundColor: theme.surface }]}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardIcon}>⚙️</Text>
-              <Text style={styles.cardTitle}>App Settings</Text>
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>App Settings</Text>
             </View>
             
             {/* Dark Mode Toggle */}
-            <View style={styles.settingItem}>
+            <View style={[styles.settingItem, { borderBottomColor: theme.divider, backgroundColor: theme.surface }]}>
               <View style={styles.settingIcon}>
                 <Text style={styles.settingIconText}>{isDark ? '🌙' : '☀️'}</Text>
               </View>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>Dark Mode</Text>
-                <Text style={styles.settingDescription}>
+                <Text style={[styles.settingTitle, { color: theme.textPrimary }]}>Dark Mode</Text>
+                <Text style={[styles.settingDescription, { color: theme.textSecondary }]}>
                   {themeMode === 'system' ? 'Following system settings' : themeMode === 'dark' ? 'Always dark' : 'Always light'}
                 </Text>
               </View>
-              <View style={styles.themeSwitcher}>
+              <View style={[styles.themeSwitcher, { backgroundColor: theme.surfaceSecondary }]}>
                 <TouchableOpacity 
-                  style={[styles.themeButton, themeMode === 'light' && styles.themeButtonActive]}
+                  style={[styles.themeButton, themeMode === 'light' && [styles.themeButtonActive, { backgroundColor: theme.surface }]]}
                   onPress={() => setThemeMode('light')}
                 >
                   <Text style={styles.themeButtonText}>☀️</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.themeButton, themeMode === 'system' && styles.themeButtonActive]}
+                  style={[styles.themeButton, themeMode === 'system' && [styles.themeButtonActive, { backgroundColor: theme.surface }]]}
                   onPress={() => setThemeMode('system')}
                 >
                   <Text style={styles.themeButtonText}>⚙️</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={[styles.themeButton, themeMode === 'dark' && styles.themeButtonActive]}
+                  style={[styles.themeButton, themeMode === 'dark' && [styles.themeButtonActive, { backgroundColor: theme.surface }]]}
                   onPress={() => setThemeMode('dark')}
                 >
                   <Text style={styles.themeButtonText}>🌙</Text>
@@ -264,19 +264,19 @@ export default function ProfileScreen() {
             
             {/* Test Notification */}
             <TouchableOpacity 
-              style={styles.settingRow}
+              style={[styles.settingRow, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}
               onPress={handleTestNotification}
             >
               <Text style={styles.settingRowIcon}>🔔</Text>
               <View style={styles.settingRowContent}>
-                <Text style={styles.settingRowTitle}>Test Notification</Text>
+                <Text style={[styles.settingRowTitle, { color: theme.textPrimary }]}>Test Notification</Text>
               </View>
-              <Text style={styles.settingRowArrow}>›</Text>
+              <Text style={[styles.settingRowArrow, { color: theme.textTertiary }]}>›</Text>
             </TouchableOpacity>
 
             {/* Sign Out */}
             <TouchableOpacity 
-              style={[styles.settingRow, styles.settingRowDanger]}
+              style={[styles.settingRow, styles.settingRowDanger, { backgroundColor: theme.surface }]}
               onPress={handleSignOut}
               disabled={loading}
             >

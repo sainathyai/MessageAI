@@ -13,6 +13,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { OptimisticMessage } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { Colors } from '../../constants';
@@ -44,6 +45,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { theme } = useTheme();
   const flatListRef = useRef<FlatList>(null);
   const { settings: aiSettings } = useAISettings();
   const insets = useSafeAreaInsets();
@@ -550,21 +552,21 @@ export default function ChatScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.outerContainer}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.surface }]} edges={['top']}>
+      <View style={[styles.outerContainer, { backgroundColor: theme.background }]}>
         <KeyboardAvoidingView
-          style={styles.container}
+          style={[styles.container, { backgroundColor: theme.background }]}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
           enabled={true}
         >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: theme.surface }]}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>{otherUserName}</Text>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{otherUserName}</Text>
             {!loading && isGroup ? (
               <TouchableOpacity 
                 style={styles.statusContainer}
