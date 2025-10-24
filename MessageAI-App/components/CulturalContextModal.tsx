@@ -14,7 +14,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { COLORS } from '../utils/constants';
+import { Colors } from '../constants';
 import { CulturalContext } from '../types/ai.types';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface CulturalContextModalProps {
   visible: boolean;
@@ -31,6 +33,8 @@ export const CulturalContextModal: React.FC<CulturalContextModalProps> = ({
   loading,
   error,
 }) => {
+  const { theme, isDark } = useTheme();
+  
   return (
     <Modal
       visible={visible}
@@ -39,15 +43,15 @@ export const CulturalContextModal: React.FC<CulturalContextModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: theme.surface }]}>
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerIcon}>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
+            <View style={[styles.headerIcon, { backgroundColor: isDark ? '#1a4d6e' : '#e6f4ff' }]}>
               <Text style={styles.headerIconText}>🌍</Text>
             </View>
-            <Text style={styles.headerTitle}>Cultural Context</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Cultural Context</Text>
+            <TouchableOpacity onPress={onClose} style={[styles.closeButton, { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' }]}>
+              <Text style={[styles.closeButtonText, { color: theme.textPrimary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -56,7 +60,7 @@ export const CulturalContextModal: React.FC<CulturalContextModalProps> = ({
             {loading && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-                <Text style={styles.loadingText}>Analyzing cultural context...</Text>
+                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Analyzing cultural context...</Text>
               </View>
             )}
 
@@ -72,8 +76,8 @@ export const CulturalContextModal: React.FC<CulturalContextModalProps> = ({
                 {!context.hasCulturalContext ? (
                   <View style={styles.noContextContainer}>
                     <Text style={styles.noContextIcon}>ℹ️</Text>
-                    <Text style={styles.noContextTitle}>No Cultural Context</Text>
-                    <Text style={styles.noContextText}>
+                    <Text style={[styles.noContextTitle, { color: theme.textPrimary }]}>No Cultural Context</Text>
+                    <Text style={[styles.noContextText, { color: theme.textSecondary }]}>
                       This message doesn't contain any specific cultural references or idioms that need explanation.
                     </Text>
                   </View>
@@ -81,27 +85,27 @@ export const CulturalContextModal: React.FC<CulturalContextModalProps> = ({
                   <>
                     {/* Explanation */}
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>📝 Explanation</Text>
-                      <Text style={styles.sectionText}>{context.explanation}</Text>
+                      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>📝 Explanation</Text>
+                      <Text style={[styles.sectionText, { color: theme.textPrimary }]}>{context.explanation}</Text>
                     </View>
 
                     {/* Literal vs Cultural Meaning */}
                     {context.literalMeaning && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>🔤 Literal Meaning</Text>
-                        <Text style={styles.sectionText}>{context.literalMeaning}</Text>
+                        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>🔤 Literal Meaning</Text>
+                        <Text style={[styles.sectionText, { color: theme.textPrimary }]}>{context.literalMeaning}</Text>
                       </View>
                     )}
 
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>🌐 Cultural Significance</Text>
-                      <Text style={styles.sectionText}>{context.culturalSignificance}</Text>
+                      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>🌐 Cultural Significance</Text>
+                      <Text style={[styles.sectionText, { color: theme.textPrimary }]}>{context.culturalSignificance}</Text>
                     </View>
 
                     {/* Appropriate Response */}
                     {context.appropriateResponse && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>💬 How to Respond</Text>
+                        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>💬 How to Respond</Text>
                         <Text style={styles.responseText}>{context.appropriateResponse}</Text>
                       </View>
                     )}
@@ -109,11 +113,11 @@ export const CulturalContextModal: React.FC<CulturalContextModalProps> = ({
                     {/* Examples */}
                     {context.examples && context.examples.length > 0 && (
                       <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>💡 Examples</Text>
+                        <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>💡 Examples</Text>
                         {context.examples.map((example, index) => (
                           <View key={index} style={styles.exampleItem}>
                             <Text style={styles.exampleBullet}>•</Text>
-                            <Text style={styles.exampleText}>{example}</Text>
+                            <Text style={[styles.exampleText, { color: theme.textSecondary }]}>{example}</Text>
                           </View>
                         ))}
                       </View>
@@ -125,7 +129,7 @@ export const CulturalContextModal: React.FC<CulturalContextModalProps> = ({
           </ScrollView>
 
           {/* Footer */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { borderTopColor: theme.border }]}>
             <TouchableOpacity style={styles.okButton} onPress={onClose}>
               <Text style={styles.okButtonText}>Got it!</Text>
             </TouchableOpacity>
@@ -284,7 +288,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f0f0f0',
   },
   okButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Teal color
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -292,7 +296,7 @@ const styles = StyleSheet.create({
   okButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.WHITE,
+    color: Colors.white,
   },
 });
 

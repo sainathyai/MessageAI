@@ -12,6 +12,7 @@ import {
 import { User } from '../types';
 import { COLORS } from '../utils/constants';
 import { searchUsers } from '../services/conversation.service';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface UserSearchProps {
   visible: boolean;
@@ -26,6 +27,7 @@ export const UserSearch: React.FC<UserSearchProps> = ({
   onClose,
   onUserSelect,
 }) => {
+  const { theme } = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,15 +63,15 @@ export const UserSearch: React.FC<UserSearchProps> = ({
     
     return (
       <TouchableOpacity
-        style={styles.userItem}
+        style={[styles.userItem, { backgroundColor: theme.surface, borderColor: theme.border }]}
         onPress={() => handleUserSelect(item)}
       >
-        <View style={[styles.avatar, { backgroundColor: COLORS.PRIMARY }]}>
-          <Text style={styles.avatarText}>{initial}</Text>
+        <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+          <Text style={[styles.avatarText, { color: theme.textOnPrimary }]}>{initial}</Text>
         </View>
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>{item.displayName}</Text>
-          <Text style={styles.userEmail}>{item.email}</Text>
+          <Text style={[styles.userName, { color: theme.textPrimary }]}>{item.displayName}</Text>
+          <Text style={[styles.userEmail, { color: theme.textSecondary }]}>{item.email}</Text>
         </View>
       </TouchableOpacity>
     );
@@ -82,21 +84,22 @@ export const UserSearch: React.FC<UserSearchProps> = ({
       transparent={false}
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>Cancel</Text>
+            <Text style={[styles.closeButtonText, { color: theme.primary }]}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>New Chat</Text>
+          <Text style={[styles.title, { color: theme.textPrimary }]}>New Chat</Text>
           <View style={styles.closeButton} />
         </View>
 
         {/* Search Input */}
         <View style={styles.searchContainer}>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { backgroundColor: theme.surfaceSecondary, color: theme.textPrimary }]}
             placeholder="Search by name or email..."
+            placeholderTextColor={theme.textTertiary}
             value={searchTerm}
             onChangeText={handleSearch}
             autoCapitalize="none"
@@ -107,7 +110,7 @@ export const UserSearch: React.FC<UserSearchProps> = ({
         {/* Results */}
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+            <ActivityIndicator size="large" color={theme.primary} />
           </View>
         ) : users.length > 0 ? (
           <FlatList
@@ -118,11 +121,11 @@ export const UserSearch: React.FC<UserSearchProps> = ({
           />
         ) : searchTerm.length >= 2 ? (
           <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>No users found</Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No users found</Text>
           </View>
         ) : (
           <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
               Search for users by name or email
             </Text>
           </View>
@@ -135,7 +138,7 @@ export const UserSearch: React.FC<UserSearchProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
+    // backgroundColor handled by theme
   },
   header: {
     flexDirection: 'row',
@@ -143,29 +146,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.LIGHT_GRAY,
+    // borderBottomColor handled by theme
     paddingTop: 50, // Account for status bar
   },
   closeButton: {
     width: 60,
   },
   closeButtonText: {
-    color: COLORS.PRIMARY,
     fontSize: 16,
+    // color handled by theme
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: COLORS.TEXT_PRIMARY,
+    // color handled by theme
   },
   searchContainer: {
     padding: 16,
   },
   searchInput: {
-    backgroundColor: COLORS.LIGHT_GRAY,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+    // backgroundColor and color handled by theme
   },
   listContainer: {
     padding: 16,
@@ -174,11 +177,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: COLORS.WHITE,
     borderRadius: 8,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: COLORS.LIGHT_GRAY,
+    // backgroundColor and borderColor handled by theme
   },
   avatar: {
     width: 40,
@@ -189,9 +191,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatarText: {
-    color: COLORS.WHITE,
     fontSize: 18,
     fontWeight: 'bold',
+    // color handled by theme
   },
   userInfo: {
     flex: 1,
@@ -199,12 +201,12 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.TEXT_PRIMARY,
     marginBottom: 2,
+    // color handled by theme
   },
   userEmail: {
     fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
+    // color handled by theme
   },
   centerContainer: {
     flex: 1,
@@ -214,8 +216,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: COLORS.TEXT_SECONDARY,
     textAlign: 'center',
+    // color handled by theme
   },
 });
 

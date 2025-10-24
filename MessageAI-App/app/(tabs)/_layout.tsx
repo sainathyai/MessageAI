@@ -4,9 +4,11 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRef } from 'react';
 import { COLORS } from '../../utils/constants';
 import { Colors } from '../../constants'; // New teal theme
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function TabsLayout() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   
   // Capture initial bottom inset ONCE using ref (never changes)
   const fixedBottomInsetRef = useRef<number | null>(null);
@@ -15,14 +17,14 @@ export default function TabsLayout() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.primary }]}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: Colors.primary, // Teal accent
-          tabBarInactiveTintColor: Colors.textSecondary, // Gray for inactive
+          tabBarActiveTintColor: theme.primary, // Teal accent
+          tabBarInactiveTintColor: theme.textSecondary, // Gray for inactive
           tabBarStyle: {
-            backgroundColor: Colors.white,
-            borderTopColor: Colors.divider,
+            backgroundColor: theme.surface,
+            borderTopColor: theme.divider,
             borderTopWidth: 1,
             paddingTop: 8,
             paddingBottom: Platform.OS === 'ios' ? 20 : 12,
@@ -39,9 +41,9 @@ export default function TabsLayout() {
             marginBottom: 4,
           },
           headerStyle: {
-            backgroundColor: Colors.primary, // Teal header
+            backgroundColor: theme.primary, // Teal header
           },
-          headerTintColor: Colors.white,
+          headerTintColor: theme.textOnPrimary,
           headerTitleStyle: {
             fontWeight: 'bold',
           },
@@ -81,9 +83,9 @@ export default function TabsLayout() {
       />
     </Tabs>
     
-    {/* Blue footer below tabs */}
+    {/* Footer below tabs */}
     {Platform.OS === 'android' && (
-      <View style={[styles.bottomSafeArea, { height: fixedBottomInsetRef.current }]} />
+      <View style={[styles.bottomSafeArea, { height: fixedBottomInsetRef.current, backgroundColor: theme.primary }]} />
     )}
   </View>
   );
@@ -92,7 +94,7 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.primary, // Teal background
+    // backgroundColor handled by theme
   },
   tabIcon: {
     alignItems: 'center',
@@ -143,7 +145,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   bottomSafeArea: {
-    backgroundColor: Colors.primary, // Teal footer
+    // backgroundColor handled by theme
   },
 });
 

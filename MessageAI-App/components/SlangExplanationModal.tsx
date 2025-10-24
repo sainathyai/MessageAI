@@ -14,7 +14,9 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { COLORS } from '../utils/constants';
+import { Colors } from '../constants';
 import { SlangTerm } from '../types/ai.types';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SlangExplanationModalProps {
   visible: boolean;
@@ -33,6 +35,8 @@ export const SlangExplanationModal: React.FC<SlangExplanationModalProps> = ({
   error,
   messageText,
 }) => {
+  const { theme, isDark } = useTheme();
+  
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'slang':
@@ -69,15 +73,15 @@ export const SlangExplanationModal: React.FC<SlangExplanationModalProps> = ({
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: theme.surface }]}>
           {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerIcon}>
-              <Text style={styles.headerIconText}>🗣️</Text>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
+            <View style={[styles.headerIcon, { backgroundColor: isDark ? '#1a4d6e' : '#e6f4ff' }]}>
+              <Text style={styles.headerIconText}>💬</Text>
             </View>
-            <Text style={styles.headerTitle}>Slang & Idioms</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Slang & Idioms</Text>
+            <TouchableOpacity onPress={onClose} style={[styles.closeButton, { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' }]}>
+              <Text style={[styles.closeButtonText, { color: theme.textPrimary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
@@ -86,7 +90,7 @@ export const SlangExplanationModal: React.FC<SlangExplanationModalProps> = ({
             {loading && (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={COLORS.PRIMARY} />
-                <Text style={styles.loadingText}>Analyzing slang and idioms...</Text>
+                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Analyzing slang and idioms...</Text>
               </View>
             )}
 
@@ -100,8 +104,8 @@ export const SlangExplanationModal: React.FC<SlangExplanationModalProps> = ({
             {!loading && !error && slangTerms.length === 0 && (
               <View style={styles.noSlangContainer}>
                 <Text style={styles.noSlangIcon}>✅</Text>
-                <Text style={styles.noSlangTitle}>No Slang Detected</Text>
-                <Text style={styles.noSlangText}>
+                <Text style={[styles.noSlangTitle, { color: theme.textPrimary }]}>No Slang Detected</Text>
+                <Text style={[styles.noSlangText, { color: theme.textSecondary }]}>
                   This message uses clear, standard language without slang terms or idioms.
                 </Text>
               </View>
@@ -111,26 +115,26 @@ export const SlangExplanationModal: React.FC<SlangExplanationModalProps> = ({
               <>
                 {/* Original Message with highlights */}
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Message</Text>
-                  <View style={styles.messageBox}>
-                    <Text style={styles.messageText}>{messageText}</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Message</Text>
+                  <View style={[styles.messageBox, { backgroundColor: isDark ? '#2a2a2a' : '#f5f5f5', borderColor: theme.border }]}>
+                    <Text style={[styles.messageText, { color: theme.textPrimary }]}>{messageText}</Text>
                   </View>
-                  <Text style={styles.hint}>
+                  <Text style={[styles.hint, { color: theme.textSecondary }]}>
                     {slangTerms.length} slang term{slangTerms.length > 1 ? 's' : ''} found
                   </Text>
                 </View>
 
                 {/* Slang Terms */}
                 {slangTerms.map((term, index) => (
-                  <View key={index} style={styles.termCard}>
-                    <View style={styles.termHeader}>
+                  <View key={index} style={[styles.termCard, { backgroundColor: isDark ? '#1a1a1a' : theme.surface, borderColor: theme.border }]}>
+                    <View style={[styles.termHeader, { backgroundColor: isDark ? '#252525' : '#f8f9fa', borderBottomColor: theme.border }]}>
                       <View style={styles.termTitleRow}>
                         <Text style={styles.termIcon}>{getTypeIcon(term.type)}</Text>
                         <Text style={styles.termText}>"{term.term}"</Text>
                       </View>
                       <View style={styles.badges}>
-                        <View style={styles.typeBadge}>
-                          <Text style={styles.typeBadgeText}>{term.type}</Text>
+                        <View style={[styles.typeBadge, { backgroundColor: isDark ? '#1a4d6e' : '#e3f2fd' }]}>
+                          <Text style={[styles.typeBadgeText, { color: isDark ? '#64b5f6' : '#1976d2' }]}>{term.type}</Text>
                         </View>
                         <View
                           style={[
@@ -146,33 +150,33 @@ export const SlangExplanationModal: React.FC<SlangExplanationModalProps> = ({
                     <View style={styles.termBody}>
                       {/* Explanation */}
                       <View style={styles.termSection}>
-                        <Text style={styles.termSectionTitle}>📖 Explanation</Text>
-                        <Text style={styles.termSectionText}>{term.explanation}</Text>
+                        <Text style={[styles.termSectionTitle, { color: theme.textPrimary }]}>📖 Explanation</Text>
+                        <Text style={[styles.termSectionText, { color: theme.textSecondary }]}>{term.explanation}</Text>
                       </View>
 
                       {/* Literal vs Actual Meaning */}
                       {term.literalMeaning && (
                         <View style={styles.termSection}>
-                          <Text style={styles.termSectionTitle}>🔤 Literal Meaning</Text>
-                          <Text style={styles.termSectionText}>{term.literalMeaning}</Text>
+                          <Text style={[styles.termSectionTitle, { color: theme.textPrimary }]}>🔤 Literal Meaning</Text>
+                          <Text style={[styles.termSectionText, { color: theme.textSecondary }]}>{term.literalMeaning}</Text>
                         </View>
                       )}
 
                       <View style={styles.termSection}>
-                        <Text style={styles.termSectionTitle}>💡 Actual Meaning</Text>
+                        <Text style={[styles.termSectionTitle, { color: theme.textPrimary }]}>💡 Actual Meaning</Text>
                         <Text style={styles.actualMeaning}>{term.actualMeaning}</Text>
                       </View>
 
                       {/* Example */}
                       <View style={styles.termSection}>
-                        <Text style={styles.termSectionTitle}>📝 Example</Text>
-                        <Text style={styles.exampleText}>"{term.example}"</Text>
+                        <Text style={[styles.termSectionTitle, { color: theme.textPrimary }]}>📝 Example</Text>
+                        <Text style={[styles.exampleText, { color: theme.textSecondary }]}>"{term.example}"</Text>
                       </View>
 
                       {/* Region */}
-                      <View style={styles.regionRow}>
+                      <View style={[styles.regionRow, { borderTopColor: theme.border }]}>
                         <Text style={styles.regionIcon}>🌍</Text>
-                        <Text style={styles.regionText}>Common in: {term.region}</Text>
+                        <Text style={[styles.regionText, { color: theme.textSecondary }]}>Common in: {term.region}</Text>
                       </View>
                     </View>
                   </View>
@@ -182,7 +186,7 @@ export const SlangExplanationModal: React.FC<SlangExplanationModalProps> = ({
           </ScrollView>
 
           {/* Footer */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { borderTopColor: theme.border }]}>
             <TouchableOpacity style={styles.okButton} onPress={onClose}>
               <Text style={styles.okButtonText}>Got it!</Text>
             </TouchableOpacity>
@@ -433,7 +437,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#f0f0f0',
   },
   okButton: {
-    backgroundColor: COLORS.PRIMARY,
+    backgroundColor: Colors.primary, // Teal color
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -441,7 +445,7 @@ const styles = StyleSheet.create({
   okButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.WHITE,
+    color: Colors.white,
   },
 });
 

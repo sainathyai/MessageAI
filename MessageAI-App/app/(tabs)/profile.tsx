@@ -97,47 +97,29 @@ export default function ProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
-          {/* Profile Card */}
-          <View style={[styles.card, { backgroundColor: theme.surface }]}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardIcon}>👤</Text>
-              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Profile</Text>
-            </View>
-            <View style={styles.profileSection}>
-              <Avatar 
-                name={user?.displayName || 'User'}
-                size="large"
-                isOnline={user?.isOnline}
-              />
-              <Text style={[styles.displayName, { color: theme.textPrimary }]}>{user?.displayName}</Text>
-              <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email}</Text>
-              
-              <View style={styles.statusBadge}>
-                <View style={[styles.statusDot, user?.isOnline && styles.statusOnline]} />
-                <Text style={styles.statusText}>
-                  {user?.isOnline ? 'Online' : 'Offline'}
-                </Text>
-              </View>
-            </View>
+          {/* Profile Section */}
+          <View style={styles.profileSection}>
+            <Avatar 
+              name={user?.displayName || 'User'}
+              size="large"
+              isOnline={user?.isOnline}
+            />
+            <Text style={[styles.displayName, { color: theme.textPrimary }]}>{user?.displayName}</Text>
+            <Text style={[styles.email, { color: theme.textSecondary }]}>{user?.email}</Text>
           </View>
 
-          {/* AI Features Card */}
-          <View style={[styles.card, { backgroundColor: theme.surface }]}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardIcon}>🤖</Text>
-              <View style={styles.cardHeaderText}>
-                <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>AI-Powered Features</Text>
-                <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>
-                  {aiConfigured ? 'Enhance your conversations' : 'Configuration required'}
-                </Text>
+          {/* AI Features Section */}
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>AI-Powered Features</Text>
+            {aiConfigured && (
+              <View style={styles.statusBadgeSuccess}>
+                <View style={styles.statusDotSuccess} />
+                <Text style={styles.statusTextSuccess}>Active</Text>
               </View>
-              {aiConfigured && (
-                <View style={styles.statusBadgeSuccess}>
-                  <View style={styles.statusDotSuccess} />
-                  <Text style={styles.statusTextSuccess}>Active</Text>
-                </View>
-              )}
-            </View>
+            )}
+          </View>
+
+          <View style={[styles.card, { backgroundColor: theme.surface }]}>
 
             {!aiConfigured ? (
               <View style={styles.warningBox}>
@@ -157,18 +139,18 @@ export default function ProfileScreen() {
                 {/* Language Preference */}
                 <View style={[styles.settingRow, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}>
                   <Text style={styles.settingRowIcon}>🌍</Text>
-                  <View style={styles.settingRowContent}>
+                  <View style={styles.settingRowContentNarrow}>
                     <Text style={[styles.settingRowTitle, { color: theme.textPrimary }]}>Language</Text>
                   </View>
-                </View>
-                <View style={[styles.languagePickerRow, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]}>
-                  <LanguageSelector
-                    selectedLanguage={aiSettings.preferredLanguage}
-                    onSelect={(code) => 
-                      updateSettings({ preferredLanguage: code })
-                    }
-                    label=""
-                  />
+                  <View style={styles.languageSelectorInline}>
+                    <LanguageSelector
+                      selectedLanguage={aiSettings.preferredLanguage}
+                      onSelect={(code) => 
+                        updateSettings({ preferredLanguage: code })
+                      }
+                      label=""
+                    />
+                  </View>
                 </View>
 
                 {/* Auto-Translate */}
@@ -319,6 +301,19 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
     gap: Spacing.lg,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    letterSpacing: 0.3,
+  },
   card: {
     backgroundColor: Colors.white,
     borderRadius: BorderRadius.lg,
@@ -354,6 +349,7 @@ const styles = StyleSheet.create({
   profileSection: {
     alignItems: 'center',
     paddingVertical: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   avatar: {
     width: 80,
@@ -378,30 +374,7 @@ const styles = StyleSheet.create({
   email: {
     fontSize: 16,
     color: COLORS.GRAY,
-    marginBottom: 16,
-  },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: COLORS.LIGHT_GRAY,
-    borderRadius: 16,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.OFFLINE,
-    marginRight: 6,
-  },
-  statusOnline: {
-    backgroundColor: COLORS.ONLINE,
-  },
-  statusText: {
-    fontSize: 14,
-    color: COLORS.DARK_GRAY,
-    fontWeight: '600',
+    marginBottom: 8,
   },
   infoSection: {
     position: 'absolute',
@@ -491,6 +464,9 @@ const styles = StyleSheet.create({
   settingRowContent: {
     flex: 1,
   },
+  settingRowContentNarrow: {
+    minWidth: 100,
+  },
   settingRowTitle: {
     fontSize: 16,
     fontWeight: '500',
@@ -510,12 +486,9 @@ const styles = StyleSheet.create({
   settingRowArrowDanger: {
     color: '#F44336',
   },
-  languagePickerRow: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E9F0',
+  languageSelectorInline: {
+    flex: 5,
+    marginLeft: Spacing.sm,
   },
   settingItem: {
     flexDirection: 'row',

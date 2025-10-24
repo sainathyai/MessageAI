@@ -9,6 +9,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  ImageBackground,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -25,7 +26,7 @@ import { MessageInput } from '../../components/MessageInput';
 import { TypingIndicator } from '../../components/TypingIndicator';
 import { GroupMembersModal } from '../../components/GroupMembersModal';
 import { SmartRepliesBar } from '../../components/SmartRepliesBar';
-import { getMessagesFromLocal, saveMessageToLocal, getUserFromCache, saveUserToCache } from '../../services/storage.service';
+import { getMessagesFromLocal, saveMessageToLocal, getUserFromCache, saveUserToCache, getConversationFromLocal, clearMessagesFromLocal } from '../../services/storage.service';
 import { isOnline, queueMessageForSync } from '../../services/sync.service';
 import {
   subscribeToUserPresence,
@@ -45,7 +46,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const flatListRef = useRef<FlatList>(null);
   const { settings: aiSettings } = useAISettings();
   const insets = useSafeAreaInsets();
@@ -127,7 +128,17 @@ export default function ChatScreen() {
     // Sort by timestamp (newest first for inverted FlatList)
     allMessages.sort((a, b) => getTime(b.timestamp) - getTime(a.timestamp));
 
-    setMessages(allMessages);
+    // Only update if messages changed (prevent unnecessary re-renders)
+    setMessages(prev => {
+      if (prev.length === allMessages.length) {
+        const allSame = prev.every((prevMsg, idx) => 
+          prevMsg.id === allMessages[idx].id && 
+          prevMsg.status === allMessages[idx].status
+        );
+        if (allSame) return prev;
+      }
+      return allMessages;
+    });
   }, [firestoreMessages, optimisticMessages]);
 
   useEffect(() => {
@@ -137,6 +148,17 @@ export default function ChatScreen() {
 
     const loadMessages = async () => {
       try {
+        // 0. FIRST: Load conversation from cache to get isGroup status (prevents flickering)
+        const cachedConversation = await getConversationFromLocal(id);
+        if (cachedConversation && isMounted) {
+          setIsGroup(cachedConversation.isGroup);
+          if (cachedConversation.isGroup) {
+            setParticipantCount(cachedConversation.participants.length);
+            setParticipantIds(cachedConversation.participants);
+            setOtherUserName(cachedConversation.groupName || 'Group Chat');
+          }
+        }
+
         // 1. Load from SQLite cache FIRST (instant, works offline)
         console.log('📦 Loading messages from cache...');
         const cachedMessages = await getMessagesFromLocal(id);
@@ -153,16 +175,57 @@ export default function ChatScreen() {
           
           console.log(`📨 Received ${msgs.length} messages from Firestore`);
           
-          // Save messages to local cache
-          for (const msg of msgs) {
+          // Populate senderName for messages that don't have it (for group chats)
+          const messagesWithNames = await Promise.all(msgs.map(async (msg) => {
+            if (!msg.senderName || msg.senderName === '') {
+              // Fetch sender's display name
+              try {
+                const senderData = await getUserData(msg.senderId);
+                const name = senderData?.displayName || 'Unknown User';
+                console.log('📛 Populated missing senderName:', name, 'for message from:', msg.senderId);
+                return {
+                  ...msg,
+                  senderName: name
+                } as OptimisticMessage;
+              } catch (error) {
+                console.error('Error fetching sender name:', error);
+                return { ...msg, senderName: 'Unknown User' } as OptimisticMessage;
+              }
+            }
+            return msg as OptimisticMessage;
+          }));
+          
+          console.log('📬 Messages with names:', messagesWithNames.map(m => ({ sender: m.senderName, text: m.text.substring(0, 20) })));
+          
+          // Clear and replace cache with fresh Firestore data (prevents stale/duplicate messages)
+          await clearMessagesFromLocal(id);
+          
+          // Save fresh messages to cache
+          for (const msg of messagesWithNames) {
             try {
-              await saveMessageToLocal(msg as OptimisticMessage);
+              await saveMessageToLocal(msg);
             } catch (error) {
               console.error('Error caching message:', error);
             }
           }
           
-          setFirestoreMessages(msgs as OptimisticMessage[]);
+          // Only update if messages changed (prevent flickering)
+          setFirestoreMessages(prev => {
+            // Check if messages are actually different
+            if (prev.length === messagesWithNames.length) {
+              // Create a map for fast lookup
+              const prevMap = new Map(prev.map(m => [m.id, m]));
+              const allSame = messagesWithNames.every(newMsg => {
+                const prevMsg = prevMap.get(newMsg.id);
+                return prevMsg && 
+                       prevMsg.text === newMsg.text && 
+                       prevMsg.status === newMsg.status &&
+                       prevMsg.senderName === newMsg.senderName;
+              });
+              if (allSame) return prev; // Don't update if nothing changed
+            }
+            return messagesWithNames;
+          });
           setLoading(false);
         });
 
@@ -288,6 +351,7 @@ export default function ChatScreen() {
         setParticipantCount(conversation.participants.length);
         setParticipantIds(conversation.participants);
         setOtherUserName(conversation.groupName || 'Group Chat');
+        console.log('✅ Group chat detected:', conversation.groupName, 'participants:', conversation.participants.length);
       }
     } catch (error) {
       console.error('Error loading conversation:', error);
@@ -517,6 +581,7 @@ export default function ChatScreen() {
 
   const renderMessage = ({ item }: { item: OptimisticMessage}) => {
     const isOwnMessage = item.senderId === user?.uid;
+    
     return (
       <TouchableOpacity
         onLongPress={() => {
@@ -546,27 +611,27 @@ export default function ChatScreen() {
 
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyText}>No messages yet</Text>
-      <Text style={styles.emptySubtext}>Send a message to start the conversation!</Text>
+      <Text style={[styles.emptyText, { color: theme.textPrimary }]}>No messages yet</Text>
+      <Text style={[styles.emptySubtext, { color: theme.textSecondary }]}>Send a message to start the conversation!</Text>
     </View>
   );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.surface }]} edges={['top']}>
-      <View style={[styles.outerContainer, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <View style={styles.outerContainer}>
         <KeyboardAvoidingView
-          style={[styles.container, { backgroundColor: theme.background }]}
+          style={styles.container}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
           enabled={true}
         >
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.surface }]}>
+        <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Text style={styles.backButtonText}>←</Text>
           </TouchableOpacity>
           <View style={styles.headerInfo}>
-            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>{otherUserName}</Text>
+            <Text style={styles.headerTitle}>{otherUserName}</Text>
             {!loading && isGroup ? (
               <TouchableOpacity 
                 style={styles.statusContainer}
@@ -601,34 +666,58 @@ export default function ChatScreen() {
           )}
         </View>
 
-        {/* Loading or Messages List */}
-        {loading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-          </View>
-        ) : (
-          <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => {
-            // Use a stable key that doesn't change when optimistic → real message
-            // This prevents React from unmounting/remounting the component
-            const signature = `${item.senderId}-${item.text.trim()}-${Math.floor(getTime(item.timestamp) / 1000)}`;
-            return signature;
-          }}
-          renderItem={renderMessage}
-          inverted
-          contentContainerStyle={[
-            styles.messagesList,
-            messages.length === 0 && styles.emptyList
-          ]}
-          ListEmptyComponent={renderEmptyState}
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-            autoscrollToTopThreshold: 100,
-          }}
-        />
-        )}
+        {/* Loading or Messages List with WhatsApp-style background */}
+        <View style={[
+          styles.messagesContainer,
+          { backgroundColor: isDark ? '#0d1418' : theme.background }
+        ]}>
+          {/* WhatsApp-style subtle pattern overlay for dark mode */}
+          {isDark && (
+            <View style={styles.darkPatternOverlay}>
+              {/* Create repeating pattern dots */}
+              {Array.from({ length: 100 }).map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.patternDot,
+                    {
+                      left: `${(i % 10) * 10 + 2}%`,
+                      top: `${Math.floor(i / 10) * 10 + 2}%`,
+                    }
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+          
+          {loading ? (
+            <View style={styles.centerContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+            </View>
+          ) : (
+            <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => {
+              // Use a stable key that doesn't change when optimistic → real message
+              // This prevents React from unmounting/remounting the component
+              const signature = `${item.senderId}-${item.text.trim()}-${Math.floor(getTime(item.timestamp) / 1000)}`;
+              return signature;
+            }}
+            renderItem={renderMessage}
+            inverted
+            contentContainerStyle={[
+              styles.messagesList,
+              messages.length === 0 && styles.emptyList
+            ]}
+            ListEmptyComponent={renderEmptyState}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 100,
+            }}
+          />
+          )}
+        </View>
 
         {/* Typing Indicator */}
         <TypingIndicator typingUsers={typingUsers} />
@@ -733,6 +822,23 @@ const styles = StyleSheet.create({
     color: Colors.white,
     opacity: 0.9,
   },
+  messagesContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  darkPatternOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.3,
+    pointerEvents: 'none', // Allow touches to pass through
+  },
+  patternDot: {
+    position: 'absolute',
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#3a4a52',
+    opacity: 0.7,
+  },
   messagesList: {
     padding: 16,
   },
@@ -749,12 +855,10 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.textPrimary,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: Colors.textSecondary,
     textAlign: 'center',
   },
   groupInfoButton: {

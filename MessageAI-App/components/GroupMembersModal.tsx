@@ -12,6 +12,8 @@ import { COLORS } from '../utils/constants';
 import { getUserData } from '../services/auth.service';
 import { Avatar } from './Avatar';
 import { User } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
+import { Colors } from '../constants';
 
 interface GroupMembersModalProps {
   visible: boolean;
@@ -21,10 +23,6 @@ interface GroupMembersModalProps {
   onMemberPress: (userId: string) => void;
 }
 
-interface MemberInfo extends User {
-  isOnline?: boolean;
-}
-
 export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   visible,
   onClose,
@@ -32,7 +30,8 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
   currentUserId,
   onMemberPress,
 }) => {
-  const [members, setMembers] = useState<MemberInfo[]>([]);
+  const { theme, isDark } = useTheme();
+  const [members, setMembers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -50,7 +49,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       });
 
       const loadedMembers = (await Promise.all(memberPromises)).filter(
-        (member): member is MemberInfo => member !== null
+        (member): member is User => member !== null
       );
 
       // Sort: current user first, then by name
@@ -75,7 +74,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
     }
   };
 
-  const renderMember = ({ item }: { item: MemberInfo }) => {
+  const renderMember = ({ item }: { item: User }) => {
     const isCurrentUser = item.uid === currentUserId;
 
     return (
@@ -88,14 +87,14 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
         
         <View style={styles.memberInfo}>
           <View style={styles.memberNameRow}>
-            <Text style={styles.memberName}>
+            <Text style={[styles.memberName, { color: theme.textPrimary }]}>
               {item.displayName}
             </Text>
             {isCurrentUser && (
-              <Text style={styles.youBadge}>You</Text>
+              <Text style={[styles.youBadge, { color: Colors.primary, backgroundColor: theme.border }]}>You</Text>
             )}
           </View>
-          <Text style={styles.memberEmail}>{item.email}</Text>
+          <Text style={[styles.memberEmail, { color: theme.textSecondary }]}>{item.email}</Text>
         </View>
 
         {!isCurrentUser && (
@@ -112,19 +111,19 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <View style={[styles.modalOverlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)' }]}>
+        <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>Group Members</Text>
+          <View style={[styles.header, { borderBottomColor: theme.border }]}>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Group Members</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>✕</Text>
+              <Text style={[styles.closeButtonText, { color: theme.textSecondary }]}>✕</Text>
             </TouchableOpacity>
           </View>
 
           {/* Member Count */}
           <View style={styles.countContainer}>
-            <Text style={styles.countText}>
+            <Text style={[styles.countText, { color: theme.textSecondary }]}>
               {members.length} {members.length === 1 ? 'member' : 'members'}
             </Text>
           </View>
@@ -132,7 +131,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
           {/* Members List */}
           {loading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={COLORS.PRIMARY} />
+              <ActivityIndicator size="large" color={Colors.primary} />
             </View>
           ) : (
             <FlatList
@@ -140,7 +139,7 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
               renderItem={renderMember}
               keyExtractor={(item) => item.uid}
               contentContainerStyle={styles.listContent}
-              ItemSeparatorComponent={() => <View style={styles.separator} />}
+              ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: theme.border }]} />}
             />
           )}
         </View>
@@ -152,11 +151,9 @@ export const GroupMembersModal: React.FC<GroupMembersModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: COLORS.WHITE,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
@@ -168,19 +165,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.LIGHT_GRAY,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: COLORS.TEXT_PRIMARY,
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
     fontSize: 24,
-    color: COLORS.GRAY,
   },
   countContainer: {
     padding: 16,
@@ -188,7 +182,6 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
   },
   loadingContainer: {
     padding: 40,
@@ -214,20 +207,16 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.TEXT_PRIMARY,
   },
   youBadge: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.PRIMARY,
-    backgroundColor: COLORS.LIGHT_GRAY,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
   },
   memberEmail: {
     fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
     marginTop: 2,
   },
   chatIcon: {
@@ -236,7 +225,6 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    backgroundColor: COLORS.LIGHT_GRAY,
     marginLeft: 62, // Align with text (avatar width + margin)
   },
 });

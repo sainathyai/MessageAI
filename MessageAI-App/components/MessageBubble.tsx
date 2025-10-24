@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
-import Animated, { FadeInLeft, FadeInRight } from 'react-native-reanimated';
+// Animations disabled for Expo Go compatibility
+// import Animated, { FadeInLeft, FadeInRight } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { OptimisticMessage } from '../types';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants';
+import { Avatar } from './Avatar';
 import dayjs from 'dayjs';
+import { toDate } from '../utils/dateFormat';
 import { translateMessage, detectLanguage } from '../services/translation.service';
 import { analyzeCulturalContext } from '../services/context.service';
 import { detectSlangAndIdioms } from '../services/slang.service';
@@ -55,7 +58,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [showTime, setShowTime] = useState(false);
 
-  const timeString = dayjs(message.timestamp).format('h:mm A');
+  const timeString = dayjs(toDate(message.timestamp)).format('h:mm A');
 
   // Auto-translate effect
   useEffect(() => {
@@ -203,54 +206,114 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   };
 
   return (
-    <Animated.View 
-      entering={isOwnMessage ? FadeInRight.duration(300) : FadeInLeft.duration(300)}
+    <View 
       style={[
         styles.container,
         isOwnMessage ? styles.ownMessageContainer : styles.otherMessageContainer
       ]}
     >
-      {/* Only show sender name in group chats */}
-      {!isOwnMessage && isGroupChat && message.senderName && (
-        <Text style={styles.senderName}>{message.senderName}</Text>
-      )}
-      
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => setShowTime(!showTime)}
-        onLongPress={(event) => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          const { pageX, pageY } = event.nativeEvent;
-          setMenuPosition({ x: pageX, y: pageY });
-          setShowContextMenu(true);
-        }}
-        delayLongPress={400}
-        style={[
-          styles.bubble,
-          isOwnMessage ? styles.ownBubble : styles.otherBubble,
-          message.status === 'failed' && styles.failedBubble
-        ]}
-      >
-        <Text style={[
-          styles.text,
-          isOwnMessage ? styles.ownText : styles.otherText
-        ]}>
-          {showTranslation && translation ? translation : message.text}
-          {/* Translation indicator - inline as nested Text */}
-          {showTranslation && detectedLanguage && (
-            <Text style={styles.translationIndicatorInline}>  🌐</Text>
+      {/* Show avatar for incoming group messages */}
+      {!isOwnMessage && isGroupChat ? (
+        <View style={styles.messageRow}>
+          <View style={styles.avatarContainer}>
+            <Avatar 
+              name={message.senderName || 'Unknown'} 
+              size="small"
+            />
+          </View>
+          <View style={styles.bubbleWrapper}>
+            {/* Triangle tail */}
+            {isOwnMessage ? (
+              <View style={[styles.triangleTail, styles.triangleTailRight, { borderLeftColor: Colors.outgoingBubble }]} />
+            ) : (
+              <View style={[styles.triangleTail, styles.triangleTailLeft, { borderRightColor: Colors.incomingBubble }]} />
+            )}
+            
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setShowTime(!showTime)}
+              onLongPress={(event) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                const { pageX, pageY } = event.nativeEvent;
+                setMenuPosition({ x: pageX, y: pageY });
+                setShowContextMenu(true);
+              }}
+              delayLongPress={400}
+              style={[
+                styles.bubble,
+                isOwnMessage ? styles.ownBubble : styles.otherBubble,
+                message.status === 'failed' && styles.failedBubble
+              ]}
+            >
+              <Text style={[
+                styles.text,
+                isOwnMessage ? styles.ownText : styles.otherText
+              ]}>
+                {showTranslation && translation ? translation : message.text}
+                {/* Translation indicator - inline as nested Text */}
+                {showTranslation && detectedLanguage && (
+                  <Text style={styles.translationIndicatorInline}>  🌐</Text>
+                )}
+              </Text>
+
+              {/* Translation error */}
+              {translationError && (
+                <Text style={styles.translationError}>⚠️ {translationError}</Text>
+              )}
+
+              {message.status === 'failed' && message.error && (
+                <Text style={styles.errorText}>{message.error}</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.bubbleWrapper}>
+          {/* Triangle tail */}
+          {isOwnMessage ? (
+            <View style={[styles.triangleTail, styles.triangleTailRight, { borderLeftColor: Colors.outgoingBubble }]} />
+          ) : (
+            <View style={[styles.triangleTail, styles.triangleTailLeft, { borderRightColor: Colors.incomingBubble }]} />
           )}
-        </Text>
+          
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => setShowTime(!showTime)}
+            onLongPress={(event) => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              const { pageX, pageY } = event.nativeEvent;
+              setMenuPosition({ x: pageX, y: pageY });
+              setShowContextMenu(true);
+            }}
+            delayLongPress={400}
+            style={[
+              styles.bubble,
+              isOwnMessage ? styles.ownBubble : styles.otherBubble,
+              message.status === 'failed' && styles.failedBubble
+            ]}
+          >
+            <Text style={[
+              styles.text,
+              isOwnMessage ? styles.ownText : styles.otherText
+            ]}>
+              {showTranslation && translation ? translation : message.text}
+              {/* Translation indicator - inline as nested Text */}
+              {showTranslation && detectedLanguage && (
+                <Text style={styles.translationIndicatorInline}>  🌐</Text>
+              )}
+            </Text>
 
-        {/* Translation error */}
-        {translationError && (
-          <Text style={styles.translationError}>⚠️ {translationError}</Text>
-        )}
+            {/* Translation error */}
+            {translationError && (
+              <Text style={styles.translationError}>⚠️ {translationError}</Text>
+            )}
 
-        {message.status === 'failed' && message.error && (
-          <Text style={styles.errorText}>{message.error}</Text>
-        )}
-      </TouchableOpacity>
+            {message.status === 'failed' && message.error && (
+              <Text style={styles.errorText}>{message.error}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Time and Status - Clean, no buttons */}
       {(showTime || message.status === 'sending' || message.status === 'failed') && (
@@ -294,7 +357,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         position={menuPosition}
         isOwnMessage={isOwnMessage}
       />
-    </Animated.View>
+    </View>
   );
 };
 
@@ -309,6 +372,44 @@ const styles = StyleSheet.create({
   otherMessageContainer: {
     alignSelf: 'flex-start',
   },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  avatarContainer: {
+    marginRight: Spacing.xs,
+  },
+  bubbleWrapper: {
+    position: 'relative',
+  },
+  triangleTail: {
+    position: 'absolute',
+    top: 0,
+    width: 0,
+    height: 0,
+    borderStyle: 'solid',
+    backgroundColor: 'transparent',
+  },
+  triangleTailRight: {
+    right: -7,
+    borderTopWidth: 0,
+    borderBottomWidth: 12,
+    borderLeftWidth: 12,
+    borderRightWidth: 0,
+    borderTopColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
+  triangleTailLeft: {
+    left: -7,
+    borderTopWidth: 0,
+    borderBottomWidth: 12,
+    borderRightWidth: 12,
+    borderLeftWidth: 0,
+    borderTopColor: 'transparent',
+    borderLeftColor: 'transparent',
+    borderBottomColor: 'transparent',
+  },
   senderName: {
     ...Typography.small,
     color: Colors.textSecondary,
@@ -316,20 +417,20 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxs,
   },
   bubble: {
-    paddingHorizontal: Spacing.default, // Balanced padding (16px both sides)
-    paddingVertical: 7,                 // Slightly thicker bubble (7px, was 5px)
-    borderRadius: 24,                   // More rounded (24px)
-    maxWidth: '100%',                   // Don't exceed container width
+    paddingHorizontal: Spacing.default,
+    paddingVertical: 7,
+    borderRadius: 18,
+    maxWidth: '100%',
   },
   ownBubble: {
-    backgroundColor: Colors.outgoingBubble, // Teal theme
-    borderBottomRightRadius: 2,             // Sharp tail pointing out
-    alignSelf: 'flex-end',                  // Right aligned for sent messages
+    backgroundColor: Colors.outgoingBubble,
+    borderTopRightRadius: 0,
+    alignSelf: 'flex-end',
   },
   otherBubble: {
-    backgroundColor: Colors.incomingBubble, // Light gray
-    borderBottomLeftRadius: 2,              // Sharp tail pointing out
-    alignSelf: 'flex-start',                // Left aligned for received messages
+    backgroundColor: Colors.incomingBubble,
+    borderTopLeftRadius: 0,
+    alignSelf: 'flex-start',
   },
   failedBubble: {
     opacity: 0.7,
@@ -419,15 +520,18 @@ const styles = StyleSheet.create({
 export const MessageBubble = React.memo(
   MessageBubbleComponent,
   (prevProps, nextProps) => {
-    // Create stable signature for comparison
-    const prevSignature = `${prevProps.message.senderId}-${prevProps.message.text.trim()}-${Math.floor(prevProps.message.timestamp.getTime() / 1000)}`;
-    const nextSignature = `${nextProps.message.senderId}-${nextProps.message.text.trim()}-${Math.floor(nextProps.message.timestamp.getTime() / 1000)}`;
+    // Create stable signature for comparison using toDate to handle Timestamp | Date
+    const prevTime = (toDate(prevProps.message.timestamp) || new Date()).getTime();
+    const nextTime = (toDate(nextProps.message.timestamp) || new Date()).getTime();
+    const prevSignature = `${prevProps.message.senderId}-${prevProps.message.text.trim()}-${Math.floor(prevTime / 1000)}`;
+    const nextSignature = `${nextProps.message.senderId}-${nextProps.message.text.trim()}-${Math.floor(nextTime / 1000)}`;
     
-    // Don't re-render if signature, status, and isOwnMessage are the same
+    // Don't re-render if signature, status, isOwnMessage, and isGroupChat are the same
     return (
       prevSignature === nextSignature &&
       prevProps.message.status === nextProps.message.status &&
-      prevProps.isOwnMessage === nextProps.isOwnMessage
+      prevProps.isOwnMessage === nextProps.isOwnMessage &&
+      prevProps.isGroupChat === nextProps.isGroupChat
     );
   }
 );

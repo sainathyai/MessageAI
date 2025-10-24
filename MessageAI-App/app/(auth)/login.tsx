@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#5B4FDB',
+    color: Colors.primary,
     marginBottom: 4,
   },
   cardSubtitle: {
@@ -231,11 +231,11 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1.5,
-    borderColor: 'rgba(91, 79, 219, 0.18)',
+    borderColor: 'rgba(20, 184, 166, 0.25)',
     borderRadius: BorderRadius.md,
     padding: 12,
     fontSize: 15,
-    backgroundColor: 'rgba(91, 79, 219, 0.05)',
+    backgroundColor: 'rgba(20, 184, 166, 0.08)',
     color: '#383854',
   },
   button: {
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   signupLink: {
     fontSize: 15,
-    color: '#5B4FDB',
+    color: Colors.primary,
     fontWeight: '700',
     textDecorationLine: 'underline',
   },

@@ -4,6 +4,7 @@ import { Conversation } from '../types';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants';
 import { formatConversationTime } from '../utils/dateFormat';
 import { Avatar } from './Avatar';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -18,6 +19,7 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
   otherUserName,
   onPress
 }) => {
+  const { theme } = useTheme();
   // Check if conversation is unread
   const isUnread = (() => {
     if (!conversation.lastMessage) return false;
@@ -50,7 +52,7 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
     : '';
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
+    <TouchableOpacity style={[styles.container, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]} onPress={onPress}>
       {/* Avatar */}
       <View style={styles.avatarContainer}>
         <Avatar 
@@ -62,14 +64,14 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.name}>
+          <Text style={[styles.name, { color: theme.textPrimary }]}>
             {displayName}
           </Text>
-          <Text style={styles.time}>{timeText}</Text>
+          <Text style={[styles.time, { color: theme.textSecondary }]}>{timeText}</Text>
         </View>
         
         <Text 
-          style={styles.lastMessage} 
+          style={[styles.lastMessage, { color: theme.textSecondary }]} 
           numberOfLines={1}
         >
           {lastMessageText}
@@ -77,7 +79,7 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
       </View>
 
       {/* Unread indicator */}
-      {isUnread && <View style={styles.unreadDot} />}
+      {isUnread && <View style={[styles.unreadDot, { backgroundColor: theme.badge }]} />}
     </TouchableOpacity>
   );
 };
@@ -86,9 +88,8 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     padding: Spacing.default,
-    backgroundColor: Colors.white,
+    // backgroundColor and borderBottomColor handled by theme
     borderBottomWidth: 1.5,
-    borderBottomColor: '#E8EBF0',
     alignItems: 'center',
   },
   avatarContainer: {
@@ -103,9 +104,9 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
   },
   avatarText: {
-    color: Colors.white,
     fontSize: 20,
     fontWeight: 'bold',
+    // color handled by theme
   },
   content: {
     flex: 1,
@@ -117,21 +118,21 @@ const styles = StyleSheet.create({
   },
   name: {
     ...Typography.contactName,
-    color: Colors.textPrimary,
+    // color handled by theme
   },
   time: {
     ...Typography.timestamp,
-    color: Colors.textSecondary,
+    // color handled by theme
   },
   lastMessage: {
     ...Typography.messagePreview,
-    color: Colors.textSecondary,
+    // color handled by theme
   },
   unreadDot: {
     width: 10,
     height: 10,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.badge, // Cyan accent for unread
+    // backgroundColor handled by theme
     marginLeft: Spacing.sm,
   },
 });

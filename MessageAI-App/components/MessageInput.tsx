@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../utils/constants';
+import { Colors } from '../constants';
 import { FormalityAdjustmentModal } from './FormalityAdjustmentModal';
 import { adjustFormality } from '../services/context.service';
 import { FormalityLevel } from '../types/ai.types';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface MessageInputProps {
   onSend: (text: string) => void;
@@ -26,6 +28,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   disabled = false,
   showFormalityButton = true,
 }) => {
+  const { theme, isDark } = useTheme();
   const [text, setText] = useState('');
   const [showFormalityModal, setShowFormalityModal] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -106,12 +109,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   return (
     <>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
         {/* Formality Button */}
         {showFormalityButton && (
           <TouchableOpacity
             style={[
               styles.formalityButton,
+              { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' },
               !text.trim() && styles.formalityButtonDisabled
             ]}
             onPress={handleOpenFormality}
@@ -122,9 +126,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         )}
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: isDark ? '#2a2a2a' : theme.background, color: theme.textPrimary }]}
           placeholder="Type a message..."
-          placeholderTextColor={COLORS.TEXT_SECONDARY}
+          placeholderTextColor={theme.textSecondary}
           value={text}
           onChangeText={handleTextChange}
           multiline
@@ -137,7 +141,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         <TouchableOpacity
           style={[
             styles.sendButton,
-            (!text.trim() || disabled) && styles.sendButtonDisabled
+            { backgroundColor: (!text.trim() || disabled) ? theme.border : Colors.primary }
           ]}
           onPress={handleSend}
           disabled={!text.trim() || disabled}
@@ -163,32 +167,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     paddingBottom: Platform.OS === 'android' ? 20 : 12,
-    backgroundColor: COLORS.WHITE,
     borderTopWidth: 1,
-    borderTopColor: COLORS.LIGHT_GRAY,
     alignItems: 'flex-end',
   },
   input: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
     marginRight: 8,
     fontSize: 16,
     maxHeight: 100,
-    color: COLORS.TEXT_PRIMARY,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.PRIMARY,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  sendButtonDisabled: {
-    backgroundColor: COLORS.GRAY,
   },
   sendButtonText: {
     color: COLORS.WHITE,
@@ -198,7 +194,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f0f0f0',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,

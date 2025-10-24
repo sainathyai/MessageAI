@@ -228,11 +228,11 @@ export default function ChatsScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: theme.surface }]}>
-          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Chats</Text>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Chats</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity
               style={styles.groupButton}

@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Colors, Spacing, BorderRadius, Typography } from '../constants';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface MessageContextMenuProps {
   visible: boolean;
@@ -29,6 +30,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   position,
   isOwnMessage,
 }) => {
+  const { theme, isDark } = useTheme();
   const { height: screenHeight } = Dimensions.get('window');
   
   // Calculate menu position (above or below the message)
@@ -40,6 +42,9 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
     top: showAbove ? position.y - menuHeight - 10 : position.y + 10,
     left: isOwnMessage ? undefined : position.x,
     right: isOwnMessage ? 20 : undefined,
+    backgroundColor: theme.surface,
+    borderWidth: 1,
+    borderColor: theme.border,
   };
 
   return (
@@ -50,7 +55,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
       onRequestClose={onClose}
     >
       <TouchableWithoutFeedback onPress={onClose}>
-        <View style={styles.overlay}>
+        <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)' }]}>
           <TouchableWithoutFeedback>
             <View style={[styles.menu, menuStyle]}>
               <TouchableOpacity
@@ -61,10 +66,10 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
                 }}
               >
                 <Text style={styles.menuIcon}>🌐</Text>
-                <Text style={styles.menuText}>Translate</Text>
+                <Text style={[styles.menuText, { color: theme.textPrimary }]}>Translate</Text>
               </TouchableOpacity>
 
-              <View style={styles.separator} />
+              <View style={[styles.separator, { backgroundColor: theme.border }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
@@ -74,10 +79,10 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
                 }}
               >
                 <Text style={styles.menuIcon}>🌍</Text>
-                <Text style={styles.menuText}>Cultural Context</Text>
+                <Text style={[styles.menuText, { color: theme.textPrimary }]}>Cultural Context</Text>
               </TouchableOpacity>
 
-              <View style={styles.separator} />
+              <View style={[styles.separator, { backgroundColor: theme.border }]} />
 
               <TouchableOpacity
                 style={styles.menuItem}
@@ -86,8 +91,8 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
                   onClose();
                 }}
               >
-                <Text style={styles.menuIcon}>🗣️</Text>
-                <Text style={styles.menuText}>Explain Slang</Text>
+                <Text style={styles.menuIcon}>💬</Text>
+                <Text style={[styles.menuText, { color: theme.textPrimary }]}>Explain Slang</Text>
               </TouchableOpacity>
             </View>
           </TouchableWithoutFeedback>

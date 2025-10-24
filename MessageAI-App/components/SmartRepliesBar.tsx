@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { COLORS } from '../utils/constants';
 import { SmartReply } from '../types/ai.types';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface SmartRepliesBarProps {
   replies: SmartReply[];
@@ -32,6 +33,8 @@ export const SmartRepliesBar: React.FC<SmartRepliesBarProps> = ({
   onRetry,
   visible = true,
 }) => {
+  const { theme } = useTheme();
+  
   if (!visible || (!loading && replies.length === 0 && !error)) {
     return null;
   }
@@ -65,13 +68,13 @@ export const SmartRepliesBar: React.FC<SmartRepliesBarProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerIcon}>
-          <Text style={styles.headerIconText}>🤖</Text>
+        <View style={[styles.headerIcon, { backgroundColor: theme.mode === 'dark' ? '#1a4d6e' : '#e6f4ff' }]}>
+          <Text style={styles.headerIconText}>✨</Text>
         </View>
-        <Text style={styles.headerText}>Smart Replies</Text>
+        <Text style={[styles.headerText, { color: theme.textSecondary }]}>Smart Replies</Text>
         {loading && <ActivityIndicator size="small" color={COLORS.PRIMARY} style={styles.loader} />}
       </View>
 
@@ -84,18 +87,30 @@ export const SmartRepliesBar: React.FC<SmartRepliesBarProps> = ({
       >
         {loading && replies.length === 0 && (
           <View style={styles.loadingContainer}>
-            <Text style={styles.loadingText}>Generating smart replies...</Text>
+            <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Generating smart replies...</Text>
           </View>
         )}
 
         {error && (
-          <View style={styles.errorContainer}>
-            <View style={styles.errorIconContainer}>
+          <View style={[
+            styles.errorContainer, 
+            { 
+              backgroundColor: theme.mode === 'dark' ? '#2a2a2a' : '#f5f5f5',
+              borderColor: theme.border 
+            }
+          ]}>
+            <View style={[
+              styles.errorIconContainer,
+              { 
+                backgroundColor: theme.mode === 'dark' ? '#1a1a1a' : '#ffffff',
+                borderColor: theme.border 
+              }
+            ]}>
               <Text style={styles.errorIcon}>💭</Text>
             </View>
             <View style={styles.errorTextContainer}>
-              <Text style={styles.errorTitle}>Couldn't generate replies</Text>
-              <Text style={styles.errorMessage}>Try again or continue typing</Text>
+              <Text style={[styles.errorTitle, { color: theme.textPrimary }]}>Couldn't generate replies</Text>
+              <Text style={[styles.errorMessage, { color: theme.textSecondary }]}>Try again or continue typing</Text>
             </View>
             {onRetry && (
               <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
@@ -110,12 +125,15 @@ export const SmartRepliesBar: React.FC<SmartRepliesBarProps> = ({
             key={index}
             style={[
               styles.replyChip,
-              { borderColor: getTypeColor(reply.type) }
+              { 
+                borderColor: getTypeColor(reply.type),
+                backgroundColor: theme.mode === 'dark' ? '#1a1a1a' : '#ffffff'
+              }
             ]}
             onPress={() => onSelectReply(reply.text)}
           >
             <Text style={styles.replyIcon}>{getTypeIcon(reply.type)}</Text>
-            <Text style={styles.replyText}>{reply.text}</Text>
+            <Text style={[styles.replyText, { color: theme.textPrimary }]}>{reply.text}</Text>
             {reply.confidence && reply.confidence > 0.8 && (
               <View style={styles.confidenceBadge}>
                 <Text style={styles.confidenceBadgeText}>✨</Text>

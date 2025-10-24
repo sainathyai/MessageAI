@@ -15,6 +15,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import { getSupportedLanguages } from '../services/translation.service';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface LanguageSelectorProps {
   selectedLanguage: string;
@@ -27,6 +28,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   onSelect,
   label = 'Select Language',
 }) => {
+  const { theme } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -48,16 +50,16 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   return (
     <>
       <TouchableOpacity
-        style={styles.selector}
+        style={[styles.selector, { backgroundColor: theme.surfaceSecondary, borderColor: theme.border }]}
         onPress={() => setModalVisible(true)}
       >
         <View style={styles.selectorContent}>
-          <Text style={styles.label}>{label}</Text>
+          {label ? <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text> : null}
           <View style={styles.selectedValue}>
-            <Text style={styles.selectedText}>
-              {selectedLang ? `${selectedLang.nativeName} (${selectedLang.name})` : 'Select...'}
+            <Text style={[styles.selectedText, { color: theme.textPrimary }]} numberOfLines={1}>
+              {selectedLang ? selectedLang.nativeName : 'Select...'}
             </Text>
-            <Text style={styles.arrow}>▼</Text>
+            <Text style={[styles.arrow, { color: theme.textTertiary }]}>▼</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -69,22 +71,23 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         onRequestClose={() => setModalVisible(false)}
       >
         <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
+          <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
             <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>{label}</Text>
+              <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+                <View style={[styles.modalHeader, { borderBottomColor: theme.divider }]}>
+                  <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{label}</Text>
                   <TouchableOpacity
                     onPress={() => setModalVisible(false)}
-                    style={styles.closeButton}
+                    style={[styles.closeButton, { backgroundColor: theme.surfaceSecondary }]}
                   >
-                    <Text style={styles.closeButtonText}>✕</Text>
+                    <Text style={[styles.closeButtonText, { color: theme.textSecondary }]}>✕</Text>
                   </TouchableOpacity>
                 </View>
 
                 <TextInput
-                  style={styles.searchInput}
+                  style={[styles.searchInput, { backgroundColor: theme.surfaceSecondary, color: theme.textPrimary }]}
                   placeholder="Search languages..."
+                  placeholderTextColor={theme.textTertiary}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   autoCapitalize="none"
@@ -97,20 +100,20 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                     <TouchableOpacity
                       style={[
                         styles.languageItem,
-                        item.code === selectedLanguage && styles.languageItemSelected,
+                        item.code === selectedLanguage && { backgroundColor: theme.primaryFaded },
                       ]}
                       onPress={() => handleSelect(item.code)}
                     >
                       <View style={styles.languageInfo}>
-                        <Text style={styles.languageNative}>{item.nativeName}</Text>
-                        <Text style={styles.languageName}>{item.name}</Text>
+                        <Text style={[styles.languageNative, { color: theme.textPrimary }]}>{item.nativeName}</Text>
+                        <Text style={[styles.languageName, { color: theme.textSecondary }]}>{item.name}</Text>
                       </View>
                       {item.code === selectedLanguage && (
-                        <Text style={styles.checkmark}>✓</Text>
+                        <Text style={[styles.checkmark, { color: theme.primary }]}>✓</Text>
                       )}
                     </TouchableOpacity>
                   )}
-                  ItemSeparatorComponent={() => <View style={styles.separator} />}
+                  ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: theme.divider }]} />}
                 />
               </View>
             </TouchableWithoutFeedback>
@@ -123,19 +126,19 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
 const styles = StyleSheet.create({
   selector: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    // backgroundColor and borderColor handled by theme
   },
   selectorContent: {
     flexDirection: 'column',
   },
   label: {
     fontSize: 12,
-    color: '#666',
     marginBottom: 4,
+    // color handled by theme
   },
   selectedValue: {
     flexDirection: 'row',
@@ -143,26 +146,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   selectedText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 15,
     flex: 1,
+    // color handled by theme
   },
   arrow: {
     fontSize: 12,
-    color: '#999',
     marginLeft: 8,
+    // color handled by theme
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    // backgroundColor handled by theme
   },
   modalContent: {
-    backgroundColor: 'white',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
     paddingTop: 20,
+    // backgroundColor handled by theme
   },
   modalHeader: {
     flexDirection: 'row',
@@ -171,33 +174,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    // borderBottomColor handled by theme
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#333',
+    // color handled by theme
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f0f0f0',
     alignItems: 'center',
     justifyContent: 'center',
+    // backgroundColor handled by theme
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#666',
+    // color handled by theme
   },
   searchInput: {
     margin: 20,
     marginTop: 15,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     fontSize: 16,
+    // backgroundColor and color handled by theme
   },
   languageItem: {
     flexDirection: 'row',
@@ -206,31 +209,28 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
   },
-  languageItemSelected: {
-    backgroundColor: '#f0f8ff',
-  },
   languageInfo: {
     flex: 1,
   },
   languageNative: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
     marginBottom: 2,
+    // color handled by theme
   },
   languageName: {
     fontSize: 13,
-    color: '#666',
+    // color handled by theme
   },
   checkmark: {
     fontSize: 20,
-    color: '#007AFF',
     marginLeft: 12,
+    // color handled by theme
   },
   separator: {
     height: 1,
-    backgroundColor: '#f0f0f0',
     marginHorizontal: 20,
+    // backgroundColor handled by theme
   },
 });
 
