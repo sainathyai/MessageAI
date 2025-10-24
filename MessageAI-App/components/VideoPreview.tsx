@@ -17,7 +17,7 @@ import { Colors } from '../constants';
 import { useTheme } from '../contexts/ThemeContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const MAX_VIDEO_DURATION = 60; // 60 seconds max
+const MAX_VIDEO_DURATION = 300; // 5 minutes max
 
 interface VideoPreviewProps {
   visible: boolean;

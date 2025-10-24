@@ -19,7 +19,7 @@ import { Platform, Alert } from 'react-native';
  * 3. This service validates durations and enforces limits
  */
 
-const MAX_VIDEO_DURATION = 60; // 60 seconds
+const MAX_VIDEO_DURATION = 300; // 5 minutes
 
 /**
  * Validate video duration

@@ -374,7 +374,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             console.error('Video picker error:', error);
             setVideoPickerSource(null);
           }}
-          maxDuration={60} // 60 seconds max
+          maxDuration={300} // 5 minutes max
         />
       )}
 

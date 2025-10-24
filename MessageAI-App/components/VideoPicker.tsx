@@ -24,7 +24,7 @@ export const VideoPicker: React.FC<VideoPickerProps> = ({
   onVideoSelected,
   onError,
   autoLaunch,
-  maxDuration = 60,
+  maxDuration = 300, // 5 minutes
 }) => {
   const { theme, isDark } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
