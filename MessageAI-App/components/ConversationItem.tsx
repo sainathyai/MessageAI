@@ -62,14 +62,14 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.name, isUnread && styles.boldText]}>
+          <Text style={styles.name}>
             {displayName}
           </Text>
           <Text style={styles.time}>{timeText}</Text>
         </View>
         
         <Text 
-          style={[styles.lastMessage, isUnread && styles.boldText]} 
+          style={styles.lastMessage} 
           numberOfLines={1}
         >
           {lastMessageText}
@@ -86,9 +86,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     padding: Spacing.default,
-    backgroundColor: Colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.divider,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#E8EBF0',
     alignItems: 'center',
   },
   avatarContainer: {
@@ -126,10 +126,6 @@ const styles = StyleSheet.create({
   lastMessage: {
     ...Typography.messagePreview,
     color: Colors.textSecondary,
-  },
-  boldText: {
-    fontWeight: 'bold',
-    color: Colors.textPrimary,
   },
   unreadDot: {
     width: 10,

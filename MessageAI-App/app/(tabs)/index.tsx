@@ -262,6 +262,15 @@ export default function ChatsScreen() {
           onClose={() => setSearchVisible(false)}
           onUserSelect={handleUserSelect}
         />
+
+        {/* Floating Action Button (FAB) */}
+        <TouchableOpacity 
+          style={styles.fab}
+          onPress={() => setSearchVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.fabIcon}>✏️</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -347,6 +356,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textSecondary,
     textAlign: 'center',
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  fabIcon: {
+    fontSize: 28,
   },
 });
 

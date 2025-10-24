@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Typography, AvatarSize, BorderRadius } from '../constants';
 
 interface AvatarProps {
@@ -56,32 +57,43 @@ export const Avatar: React.FC<AvatarProps> = ({
     }
   };
 
-  const getBackgroundColor = (name: string): string => {
-    // Generate consistent color based on name
-    const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A',
-      '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'
+  const getGradientColors = (name: string): [string, string] => {
+    // Generate consistent gradient colors based on name
+    const gradients: [string, string][] = [
+      ['#FF6B6B', '#FF8E8E'],  // Red to light red
+      ['#4ECDC4', '#6ED9D1'],  // Teal to light teal
+      ['#45B7D1', '#6BC9E0'],  // Blue to light blue
+      ['#FFA07A', '#FFB89C'],  // Coral to light coral
+      ['#98D8C8', '#ACE3D5'],  // Mint to light mint
+      ['#F7DC6F', '#F9E791'],  // Yellow to light yellow
+      ['#BB8FCE', '#CBA8DA'],  // Purple to light purple
+      ['#85C1E2', '#9ED1EB'],  // Sky blue to light sky blue
     ];
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
       hash = name.charCodeAt(i) + ((hash << 5) - hash);
     }
-    return colors[Math.abs(hash) % colors.length];
+    return gradients[Math.abs(hash) % gradients.length];
   };
 
   const initials = getInitials(name);
-  const backgroundColor = getBackgroundColor(name);
+  const gradientColors = getGradientColors(name);
 
   return (
     <View style={[styles.container, getSizeStyles()]}>
       {imageUrl ? (
         <Image source={{ uri: imageUrl }} style={[styles.image, getSizeStyles()]} />
       ) : (
-        <View style={[styles.initialsContainer, getSizeStyles(), { backgroundColor }]}>
+        <LinearGradient
+          colors={gradientColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.initialsContainer, getSizeStyles()]}
+        >
           <Text style={[styles.initials, { fontSize: getTextSize() }]}>
             {initials}
           </Text>
-        </View>
+        </LinearGradient>
       )}
       {isOnline && <View style={[styles.onlineBadge, getOnlineBadgeSize()]} />}
     </View>
