@@ -669,11 +669,11 @@ const styles = StyleSheet.create({
   },
   outerContainer: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F5F7FA',
   },
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: '#F5F7FA',
   },
   bottomSafeArea: {
     backgroundColor: Colors.primary, // Changed to teal
