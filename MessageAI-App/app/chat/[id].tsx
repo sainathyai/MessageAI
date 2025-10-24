@@ -18,7 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { OptimisticMessage } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { Colors } from '../../constants';
-import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered } from '../../services/message.service';
+import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered, sendImageMessage } from '../../services/message.service';
 import { getConversation, markConversationAsRead } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
@@ -195,7 +195,13 @@ export default function ChatScreen() {
             return msg as OptimisticMessage;
           }));
           
-          console.log('📬 Messages with names:', messagesWithNames.map(m => ({ sender: m.senderName, text: m.text.substring(0, 20) })));
+          console.log('📬 Messages with names:', messagesWithNames.map(m => ({ 
+            sender: m.senderName, 
+            text: m.text.substring(0, 20),
+            type: m.type,
+            hasImageUrl: !!m.imageUrl,
+            hasMedia: !!m.media
+          })));
           
           // Clear and replace cache with fresh Firestore data (prevents stale/duplicate messages)
           await clearMessagesFromLocal(id);
@@ -537,6 +543,118 @@ export default function ChatScreen() {
     }
   };
 
+  const handleSendImage = async (imageUri: string, width: number, height: number, caption?: string) => {
+    if (!user || !id) return;
+
+    try {
+      // Check if online
+      const online = await isOnline();
+
+      if (!online) {
+        Alert.alert('Offline', 'Image upload requires an internet connection. Please try again when online.');
+        return;
+      }
+
+      // Create optimistic message for immediate display
+      const optimisticImageMessage: OptimisticMessage = {
+        id: `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        conversationId: id,
+        text: caption || '',
+        senderId: user.uid,
+        senderName: user.displayName,
+        timestamp: new Date(),
+        status: 'sending',
+        type: 'image',
+        media: {
+          localUri: imageUri, // Show local preview
+          width,
+          height,
+          mimeType: 'image/jpeg',
+        },
+        isOptimistic: true,
+      };
+
+      // Add to optimistic messages immediately
+      setOptimisticMessages(prev => [...prev, optimisticImageMessage]);
+
+      // Upload to S3 and save to Firestore in background
+      try {
+        await sendImageMessage(
+          id,
+          imageUri,
+          user.uid,
+          user.displayName,
+          width,
+          height,
+          caption,
+          (progress) => {
+            console.log(`📤 Upload progress: ${progress.percentage}%`);
+            // TODO: Update UI with upload progress
+          }
+        );
+
+        // Remove optimistic message after successful upload
+        setOptimisticMessages(prev => 
+          prev.filter(msg => msg.id !== optimisticImageMessage.id)
+        );
+
+        console.log('✅ Image sent successfully');
+      } catch (uploadError) {
+        console.error('❌ Image upload failed:', uploadError);
+        
+        // Mark optimistic message as failed
+        setOptimisticMessages(prev =>
+          prev.map(msg =>
+            msg.id === optimisticImageMessage.id
+              ? { 
+                  ...msg, 
+                  status: 'failed' as const, 
+                  error: uploadError instanceof Error ? uploadError.message : 'Upload failed' 
+                }
+              : msg
+          )
+        );
+
+        Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error sending image:', error);
+      Alert.alert('Error', 'Failed to send image. Please try again.');
+    }
+  };
+
+  const handleSendImages = async (images: Array<{ uri: string; width: number; height: number }>, caption?: string) => {
+    if (!user || !id || images.length === 0) return;
+
+    try {
+      // Check if online
+      const online = await isOnline();
+
+      if (!online) {
+        Alert.alert('Offline', 'Image upload requires an internet connection. Please try again when online.');
+        return;
+      }
+
+      // Send each image separately (with shared caption on first image only)
+      for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        const imageCaption = i === 0 ? caption : undefined; // Only first image gets caption
+        
+        await handleSendImage(image.uri, image.width, image.height, imageCaption);
+        
+        // Small delay between sends to avoid overwhelming the system
+        if (i < images.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+
+      console.log(`✅ Successfully sent ${images.length} images`);
+    } catch (error) {
+      console.error('❌ Error sending images:', error);
+      Alert.alert('Error', 'Failed to send some images. Please try again.');
+    }
+  };
+
   const handleRetryMessage = async (message: OptimisticMessage) => {
     if (!user || !id) return;
 
@@ -733,7 +851,12 @@ export default function ChatScreen() {
         />
 
         {/* Message Input */}
-        <MessageInput onSend={handleSendMessage} onTyping={handleTyping} />
+        <MessageInput 
+          onSend={handleSendMessage} 
+          onSendImage={handleSendImage}
+          onSendImages={handleSendImages}
+          onTyping={handleTyping} 
+        />
       </KeyboardAvoidingView>
 
       {/* Fixed bottom safe area for Android navigation */}

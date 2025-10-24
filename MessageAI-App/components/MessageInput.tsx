@@ -6,17 +6,24 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { COLORS } from '../utils/constants';
 import { Colors } from '../constants';
+import { AttachmentMenu } from './AttachmentMenu';
 import { FormalityAdjustmentModal } from './FormalityAdjustmentModal';
+import { ImagePicker } from './ImagePicker';
+import { ImagePreview, ImagePreviewItem } from './ImagePreview';
 import { adjustFormality } from '../services/context.service';
 import { FormalityLevel } from '../types/ai.types';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface MessageInputProps {
   onSend: (text: string) => void;
+  onSendImage?: (imageUri: string, width: number, height: number, caption?: string) => void;
+  onSendImages?: (images: Array<{ uri: string; width: number; height: number }>, caption?: string) => void;
   onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
   showFormalityButton?: boolean;
@@ -24,13 +31,19 @@ interface MessageInputProps {
 
 export const MessageInput: React.FC<MessageInputProps> = ({
   onSend,
+  onSendImage,
+  onSendImages,
   onTyping,
   disabled = false,
   showFormalityButton = true,
 }) => {
   const { theme, isDark } = useTheme();
   const [text, setText] = useState('');
+  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [showFormalityModal, setShowFormalityModal] = useState(false);
+  const [imagePickerSource, setImagePickerSource] = useState<'camera' | 'gallery' | null>(null);
+  const [selectedImages, setSelectedImages] = useState<ImagePreviewItem[]>([]);
+  const [showImagePreview, setShowImagePreview] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
 
@@ -107,23 +120,148 @@ export const MessageInput: React.FC<MessageInputProps> = ({
     }
   };
 
+  const handleImageSelected = (imageUri: string, width: number, height: number) => {
+    setImagePickerSource(null);
+    if (onSendImage) {
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Send image with optional caption
+      onSendImage(imageUri, width, height, text.trim() || undefined);
+      
+      // Clear text after sending
+      setText('');
+    }
+  };
+
+  const handleImagesSelected = (images: ImagePreviewItem[]) => {
+    setImagePickerSource(null);
+    setSelectedImages(images);
+    setShowImagePreview(true);
+  };
+
+  const handleSendImages = async (images: ImagePreviewItem[], caption?: string) => {
+    if (onSendImages && images.length > 0) {
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
+      // Send all images
+      onSendImages(images, caption);
+      
+      // Clear state
+      setSelectedImages([]);
+      setShowImagePreview(false);
+      setText('');
+    }
+  };
+
+  // Define menu items
+  const menuItems = [
+    {
+      id: 'camera',
+      label: 'Camera',
+      icon: 'camera' as const,
+      color: Colors.primary,
+      onPress: () => {
+        setShowAttachmentMenu(false);
+        setImagePickerSource('camera');
+      },
+      disabled: !onSendImage,
+    },
+    {
+      id: 'gallery',
+      label: 'Gallery',
+      icon: 'images' as const,
+      color: Colors.accent,
+      onPress: () => {
+        setShowAttachmentMenu(false);
+        // Support multiple if handler exists, otherwise single
+        setImagePickerSource('gallery');
+      },
+      disabled: !onSendImage && !onSendImages,
+    },
+    {
+      id: 'formality',
+      label: 'Formality',
+      icon: 'text' as const,
+      color: Colors.violet,
+      onPress: () => {
+        setShowAttachmentMenu(false);
+        if (text.trim()) {
+          setShowFormalityModal(true);
+        }
+      },
+      disabled: !showFormalityButton || !text.trim(),
+    },
+    {
+      id: 'video',
+      label: 'Video',
+      icon: 'videocam' as const,
+      color: '#E57373',
+      onPress: () => {
+        // Future: Video recording
+      },
+      disabled: true,
+    },
+    {
+      id: 'voice',
+      label: 'Voice',
+      icon: 'mic' as const,
+      color: '#64B5F6',
+      onPress: () => {
+        // Future: Voice message
+      },
+      disabled: true,
+    },
+    {
+      id: 'file',
+      label: 'File',
+      icon: 'document' as const,
+      color: '#FFB74D',
+      onPress: () => {
+        // Future: File attachment
+      },
+      disabled: true,
+    },
+    {
+      id: 'location',
+      label: 'Location',
+      icon: 'location' as const,
+      color: '#81C784',
+      onPress: () => {
+        // Future: Location sharing
+      },
+      disabled: true,
+    },
+    {
+      id: 'contact',
+      label: 'Contact',
+      icon: 'person' as const,
+      color: '#BA68C8',
+      onPress: () => {
+        // Future: Contact sharing
+      },
+      disabled: true,
+    },
+  ];
+
   return (
     <>
       <View style={[styles.container, { backgroundColor: theme.surface, borderTopColor: theme.border }]}>
-        {/* Formality Button */}
-        {showFormalityButton && (
-          <TouchableOpacity
-            style={[
-              styles.formalityButton,
-              { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' },
-              !text.trim() && styles.formalityButtonDisabled
-            ]}
-            onPress={handleOpenFormality}
-            disabled={!text.trim()}
-          >
-            <Text style={styles.formalityButtonText}>📝</Text>
-          </TouchableOpacity>
-        )}
+        {/* Attachment Menu Button (+) */}
+        <TouchableOpacity
+          style={[
+            styles.attachButton,
+            { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' }
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowAttachmentMenu(true);
+          }}
+          disabled={disabled}
+        >
+          <Ionicons name="add" size={28} color={Colors.primary} />
+        </TouchableOpacity>
 
         <TextInput
           style={[styles.input, { backgroundColor: isDark ? '#2a2a2a' : theme.background, color: theme.textPrimary }]}
@@ -150,6 +288,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         </TouchableOpacity>
       </View>
 
+      {/* Attachment Menu */}
+      <AttachmentMenu
+        visible={showAttachmentMenu}
+        onClose={() => setShowAttachmentMenu(false)}
+        menuItems={menuItems}
+      />
+
       {/* Formality Adjustment Modal */}
       <FormalityAdjustmentModal
         visible={showFormalityModal}
@@ -157,6 +302,31 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         originalText={text}
         onApply={handleApplyFormality}
         onAdjust={handleFormalityAdjust}
+      />
+
+      {/* Image Picker Modal (only shows when auto-launch not used) */}
+      {imagePickerSource && (
+        <ImagePicker
+          autoLaunch={imagePickerSource}
+          onImageSelected={handleImageSelected}
+          onImagesSelected={handleImagesSelected}
+          allowMultiple={imagePickerSource === 'gallery' && !!onSendImages}
+          onError={(error) => {
+            console.error('Image picker error:', error);
+            setImagePickerSource(null);
+          }}
+        />
+      )}
+
+      {/* Image Preview Modal */}
+      <ImagePreview
+        visible={showImagePreview}
+        images={selectedImages}
+        onClose={() => {
+          setShowImagePreview(false);
+          setSelectedImages([]);
+        }}
+        onSend={handleSendImages}
       />
     </>
   );
@@ -190,7 +360,7 @@ const styles = StyleSheet.create({
     color: COLORS.WHITE,
     fontSize: 20,
   },
-  formalityButton: {
+  attachButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -198,11 +368,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 8,
   },
-  formalityButtonDisabled: {
-    opacity: 0.4,
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  formalityButtonText: {
-    fontSize: 20,
+  modalContent: {
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'android' ? 20 : 0,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 

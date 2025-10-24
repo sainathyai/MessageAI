@@ -18,6 +18,8 @@ import { COLLECTIONS } from '../utils/constants';
 import { updateConversationLastMessage } from './conversation.service';
 import { sendMessageNotification } from './push-notification-sender.service';
 import { getTime } from '../utils/dateFormat';
+import type { UploadProgress } from './cloud-storage.service';
+import { uploadImageToS3 } from './cloud-storage.service';
 
 /**
  * Send a message to a conversation
@@ -182,6 +184,19 @@ export const subscribeToMessages = (
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const messages: Message[] = snapshot.docs.map(doc => {
         const data = doc.data();
+        
+        // Log image messages to debug
+        if (data.type === 'image') {
+          console.log('📩 Firestore image message:', {
+            id: doc.id,
+            type: data.type,
+            imageUrl: data.imageUrl,
+            media: data.media,
+            hasImageUrl: !!data.imageUrl,
+            hasMedia: !!data.media,
+          });
+        }
+        
         return {
           id: doc.id,
           conversationId: data.conversationId,
@@ -190,7 +205,9 @@ export const subscribeToMessages = (
           senderName: data.senderName,
           timestamp: data.timestamp?.toDate() || new Date(),
           status: data.status || 'sent',
-          type: data.type || 'text'
+          type: data.type || 'text',
+          imageUrl: data.imageUrl,
+          media: data.media,
         };
       });
 
@@ -334,6 +351,78 @@ export const markMessagesAsDelivered = async (
     await Promise.all(updatePromises);
   } catch (error) {
     console.error('Error marking messages as delivered:', error);
+  }
+};
+
+/**
+ * Send an image message with S3 upload
+ */
+export const sendImageMessage = async (
+  conversationId: string,
+  localImageUri: string,
+  senderId: string,
+  senderName: string,
+  width: number,
+  height: number,
+  caption?: string,
+  onProgress?: (progress: UploadProgress) => void
+): Promise<string> => {
+  try {
+    // Generate unique filename
+    const filename = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+    
+    // Upload to S3
+    console.log('📤 Uploading image to S3...');
+    const uploadResult = await uploadImageToS3(
+      localImageUri,
+      filename,
+      'image/jpeg',
+      onProgress
+    );
+    
+    console.log('✅ S3 upload complete:', uploadResult.url);
+    
+    // Save message to Firestore with S3 URL
+    const messagesRef = collection(db, COLLECTIONS.MESSAGES);
+    
+    const messageData = {
+      conversationId,
+      text: caption || '',
+      senderId,
+      senderName,
+      timestamp: serverTimestamp(),
+      status: 'sent',
+      type: 'image',
+      imageUrl: uploadResult.url,
+      media: {
+        cloudUri: uploadResult.url,
+        width,
+        height,
+        size: uploadResult.size,
+        mimeType: 'image/jpeg',
+        filename: uploadResult.key,
+      },
+    };
+
+    const docRef = await addDoc(messagesRef, messageData);
+
+    // Update conversation's last message
+    await updateConversationLastMessage(conversationId, {
+      text: caption || '📷 Image',
+      senderId,
+      timestamp: new Date()
+    });
+
+    // Send push notification
+    sendMessageNotification(conversationId, senderId, senderName, caption || '📷 Image')
+      .catch(error => {
+        console.error('Push notification failed (non-blocking):', error);
+      });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error sending image message:', error);
+    throw new Error(`Failed to send image: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

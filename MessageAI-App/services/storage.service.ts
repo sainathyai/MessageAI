@@ -44,10 +44,34 @@ export const initDatabase = (): void => {
         timestamp INTEGER NOT NULL,
         status TEXT NOT NULL,
         type TEXT NOT NULL,
+        imageUrl TEXT,
+        media TEXT,
         synced INTEGER DEFAULT 0,
         isOptimistic INTEGER DEFAULT 0
       );
     `);
+
+    // Migration: Add imageUrl column if it doesn't exist (for existing databases)
+    try {
+      db.execSync(`ALTER TABLE messages ADD COLUMN imageUrl TEXT;`);
+      console.log('✅ Added imageUrl column to messages table');
+    } catch (error: any) {
+      // Column already exists or other error - this is fine
+      if (!error?.message?.includes('duplicate column name')) {
+        console.log('ℹ️  imageUrl column migration skipped (likely already exists)');
+      }
+    }
+
+    // Migration: Add media column if it doesn't exist (for existing databases)
+    try {
+      db.execSync(`ALTER TABLE messages ADD COLUMN media TEXT;`);
+      console.log('✅ Added media column to messages table');
+    } catch (error: any) {
+      // Column already exists or other error - this is fine
+      if (!error?.message?.includes('duplicate column name')) {
+        console.log('ℹ️  media column migration skipped (likely already exists)');
+      }
+    }
 
     // Create index on conversationId for faster queries
     db.execSync(`
@@ -123,8 +147,8 @@ export const saveMessageToLocal = async (message: OptimisticMessage): Promise<vo
   try {
     const statement = await db.prepareAsync(`
       INSERT OR REPLACE INTO messages 
-      (id, conversationId, text, senderId, senderName, timestamp, status, type, synced, isOptimistic)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, conversationId, text, senderId, senderName, timestamp, status, type, imageUrl, media, synced, isOptimistic)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     await statement.executeAsync([
@@ -136,6 +160,8 @@ export const saveMessageToLocal = async (message: OptimisticMessage): Promise<vo
       (toDate(message.timestamp) || new Date()).getTime(),
       message.status,
       message.type,
+      message.imageUrl || null,
+      message.media ? JSON.stringify(message.media) : null,
       message.isOptimistic ? 0 : 1, // Not synced if optimistic
       message.isOptimistic ? 1 : 0
     ]);
@@ -166,6 +192,8 @@ export const getMessagesFromLocal = async (conversationId: string): Promise<Opti
       timestamp: number;
       status: string;
       type: string;
+      imageUrl: string | null;
+      media: string | null;
       synced: number;
       isOptimistic: number;
     }>;
@@ -179,6 +207,8 @@ export const getMessagesFromLocal = async (conversationId: string): Promise<Opti
       timestamp: new Date(row.timestamp),
       status: row.status as any,
       type: row.type as any,
+      imageUrl: row.imageUrl || undefined,
+      media: row.media ? JSON.parse(row.media) : undefined,
       isOptimistic: row.isOptimistic === 1
     }));
   } catch (error) {

@@ -62,7 +62,10 @@
       "router": {},
       "eas": {
         "projectId": "a6fe2c75-0ea8-412b-89e7-45979b8ce533"
-      }
+      },
+      "EXPO_PUBLIC_AWS_REGION": "us-east-1",
+      "EXPO_PUBLIC_S3_BUCKET": "messageai-media-production",
+      "EXPO_PUBLIC_API_GATEWAY_URL": "https://plk7eg9jc9.execute-api.us-east-1.amazonaws.com/prod"
     }
   }
 }

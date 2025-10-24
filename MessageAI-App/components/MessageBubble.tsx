@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { OptimisticMessage } from '../types';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants';
 import { Avatar } from './Avatar';
+import { ImageMessage } from './ImageMessage';
 import dayjs from 'dayjs';
 import { toDate } from '../utils/dateFormat';
 import { translateMessage, detectLanguage } from '../services/translation.service';
@@ -222,96 +223,192 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
             />
           </View>
           <View style={styles.bubbleWrapper}>
-            {/* Triangle tail */}
-            {isOwnMessage ? (
-              <View style={[styles.triangleTail, styles.triangleTailRight, { borderLeftColor: Colors.outgoingBubble }]} />
-            ) : (
-              <View style={[styles.triangleTail, styles.triangleTailLeft, { borderRightColor: Colors.incomingBubble }]} />
-            )}
-            
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => setShowTime(!showTime)}
-              onLongPress={(event) => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                const { pageX, pageY } = event.nativeEvent;
-                setMenuPosition({ x: pageX, y: pageY });
-                setShowContextMenu(true);
-              }}
-              delayLongPress={400}
-              style={[
-                styles.bubble,
-                isOwnMessage ? styles.ownBubble : styles.otherBubble,
-                message.status === 'failed' && styles.failedBubble
-              ]}
-            >
-              <Text style={[
-                styles.text,
-                isOwnMessage ? styles.ownText : styles.otherText
-              ]}>
-                {showTranslation && translation ? translation : message.text}
-                {/* Translation indicator - inline as nested Text */}
-                {showTranslation && detectedLanguage && (
-                  <Text style={styles.translationIndicatorInline}>  🌐</Text>
+            {/* Image Message (outside bubble) */}
+            {message.type === 'image' && (message.media?.localUri || message.imageUrl) ? (
+              <>
+                {console.log('🖼️ Rendering image message (group):', {
+                  type: message.type,
+                  imageUrl: message.imageUrl,
+                  cloudUri: message.media?.cloudUri,
+                  localUri: message.media?.localUri,
+                  width: message.media?.width,
+                  height: message.media?.height,
+                  finalUri: message.imageUrl || message.media?.cloudUri || message.media?.localUri || 'EMPTY'
+                })}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onLongPress={(event) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    const { pageX, pageY } = event.nativeEvent;
+                    setMenuPosition({ x: pageX, y: pageY });
+                    setShowContextMenu(true);
+                  }}
+                  delayLongPress={400}
+                  style={styles.imageContainer}
+                >
+                  <ImageMessage
+                    imageUri={message.imageUrl || message.media?.cloudUri || message.media?.localUri || ''}
+                    width={message.media?.width}
+                    height={message.media?.height}
+                    isOwnMessage={isOwnMessage}
+                  />
+                </TouchableOpacity>
+
+                {/* Caption bubble (if text exists) */}
+                {message.text && message.text.trim().length > 0 && (
+                  <>
+                    <View style={[styles.triangleTail, styles.triangleTailLeft, { borderRightColor: Colors.incomingBubble }]} />
+                    <TouchableOpacity
+                      activeOpacity={0.8}
+                      onPress={() => setShowTime(!showTime)}
+                      style={[
+                        styles.bubble,
+                        styles.otherBubble,
+                        styles.captionBubble
+                      ]}
+                    >
+                      <Text style={[styles.text, styles.otherText, styles.captionText]}>
+                        {showTranslation && translation ? translation : message.text}
+                        {showTranslation && detectedLanguage && (
+                          <Text style={styles.translationIndicatorInline}>  🌐</Text>
+                        )}
+                      </Text>
+                    </TouchableOpacity>
+                  </>
                 )}
-              </Text>
+              </>
+            ) : (
+              <>
+                {/* Text message bubble */}
+                <View style={[styles.triangleTail, styles.triangleTailLeft, { borderRightColor: Colors.incomingBubble }]} />
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => setShowTime(!showTime)}
+                  onLongPress={(event) => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    const { pageX, pageY } = event.nativeEvent;
+                    setMenuPosition({ x: pageX, y: pageY });
+                    setShowContextMenu(true);
+                  }}
+                  delayLongPress={400}
+                  style={[
+                    styles.bubble,
+                    styles.otherBubble,
+                    message.status === 'failed' && styles.failedBubble
+                  ]}
+                >
+                  <Text style={[styles.text, styles.otherText]}>
+                    {showTranslation && translation ? translation : message.text}
+                    {showTranslation && detectedLanguage && (
+                      <Text style={styles.translationIndicatorInline}>  🌐</Text>
+                    )}
+                  </Text>
 
-              {/* Translation error */}
-              {translationError && (
-                <Text style={styles.translationError}>⚠️ {translationError}</Text>
-              )}
+                  {translationError && (
+                    <Text style={styles.translationError}>⚠️ {translationError}</Text>
+                  )}
 
-              {message.status === 'failed' && message.error && (
-                <Text style={styles.errorText}>{message.error}</Text>
-              )}
-            </TouchableOpacity>
+                  {message.status === 'failed' && message.error && (
+                    <Text style={styles.errorText}>{message.error}</Text>
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       ) : (
         <View style={styles.bubbleWrapper}>
-          {/* Triangle tail */}
-          {isOwnMessage ? (
-            <View style={[styles.triangleTail, styles.triangleTailRight, { borderLeftColor: Colors.outgoingBubble }]} />
-          ) : (
-            <View style={[styles.triangleTail, styles.triangleTailLeft, { borderRightColor: Colors.incomingBubble }]} />
-          )}
-          
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setShowTime(!showTime)}
-            onLongPress={(event) => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              const { pageX, pageY } = event.nativeEvent;
-              setMenuPosition({ x: pageX, y: pageY });
-              setShowContextMenu(true);
-            }}
-            delayLongPress={400}
-            style={[
-              styles.bubble,
-              isOwnMessage ? styles.ownBubble : styles.otherBubble,
-              message.status === 'failed' && styles.failedBubble
-            ]}
-          >
-            <Text style={[
-              styles.text,
-              isOwnMessage ? styles.ownText : styles.otherText
-            ]}>
-              {showTranslation && translation ? translation : message.text}
-              {/* Translation indicator - inline as nested Text */}
-              {showTranslation && detectedLanguage && (
-                <Text style={styles.translationIndicatorInline}>  🌐</Text>
+          {/* Image Message (outside bubble) */}
+          {message.type === 'image' && (message.media?.localUri || message.imageUrl) ? (
+            <>
+              {console.log('🖼️ Rendering image message:', {
+                type: message.type,
+                imageUrl: message.imageUrl,
+                cloudUri: message.media?.cloudUri,
+                localUri: message.media?.localUri,
+                width: message.media?.width,
+                height: message.media?.height,
+                finalUri: message.imageUrl || message.media?.cloudUri || message.media?.localUri || 'EMPTY'
+              })}
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onLongPress={(event) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  const { pageX, pageY } = event.nativeEvent;
+                  setMenuPosition({ x: pageX, y: pageY });
+                  setShowContextMenu(true);
+                }}
+                delayLongPress={400}
+                style={styles.imageContainer}
+              >
+                <ImageMessage
+                  imageUri={message.imageUrl || message.media?.cloudUri || message.media?.localUri || ''}
+                  width={message.media?.width}
+                  height={message.media?.height}
+                  isOwnMessage={isOwnMessage}
+                />
+              </TouchableOpacity>
+
+              {/* Caption bubble (if text exists) */}
+              {message.text && message.text.trim().length > 0 && (
+                <>
+                  <View style={[styles.triangleTail, styles.triangleTailRight, { borderLeftColor: Colors.outgoingBubble }]} />
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setShowTime(!showTime)}
+                    style={[
+                      styles.bubble,
+                      styles.ownBubble,
+                      styles.captionBubble
+                    ]}
+                  >
+                    <Text style={[styles.text, styles.ownText, styles.captionText]}>
+                      {showTranslation && translation ? translation : message.text}
+                      {showTranslation && detectedLanguage && (
+                        <Text style={styles.translationIndicatorInline}>  🌐</Text>
+                      )}
+                    </Text>
+                  </TouchableOpacity>
+                </>
               )}
-            </Text>
+            </>
+          ) : (
+            <>
+              {/* Text message bubble */}
+              <View style={[styles.triangleTail, isOwnMessage ? styles.triangleTailRight : styles.triangleTailLeft, { borderLeftColor: isOwnMessage ? Colors.outgoingBubble : undefined, borderRightColor: !isOwnMessage ? Colors.incomingBubble : undefined }]} />
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setShowTime(!showTime)}
+                onLongPress={(event) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  const { pageX, pageY } = event.nativeEvent;
+                  setMenuPosition({ x: pageX, y: pageY });
+                  setShowContextMenu(true);
+                }}
+                delayLongPress={400}
+                style={[
+                  styles.bubble,
+                  isOwnMessage ? styles.ownBubble : styles.otherBubble,
+                  message.status === 'failed' && styles.failedBubble
+                ]}
+              >
+                <Text style={[styles.text, isOwnMessage ? styles.ownText : styles.otherText]}>
+                  {showTranslation && translation ? translation : message.text}
+                  {showTranslation && detectedLanguage && (
+                    <Text style={styles.translationIndicatorInline}>  🌐</Text>
+                  )}
+                </Text>
 
-            {/* Translation error */}
-            {translationError && (
-              <Text style={styles.translationError}>⚠️ {translationError}</Text>
-            )}
+                {translationError && (
+                  <Text style={styles.translationError}>⚠️ {translationError}</Text>
+                )}
 
-            {message.status === 'failed' && message.error && (
-              <Text style={styles.errorText}>{message.error}</Text>
-            )}
-          </TouchableOpacity>
+                {message.status === 'failed' && message.error && (
+                  <Text style={styles.errorText}>{message.error}</Text>
+                )}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
 
@@ -512,6 +609,19 @@ const styles = StyleSheet.create({
     color: Colors.errorLight,
     marginTop: Spacing.xs,
     fontStyle: 'italic',
+  },
+  imageContainer: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    maxWidth: 280,
+    marginBottom: Spacing.xs,
+  },
+  captionBubble: {
+    marginTop: -4, // Slight overlap with image
+    maxWidth: 280,
+  },
+  captionText: {
+    fontSize: 14,
   },
 });
 

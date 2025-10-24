@@ -74,15 +74,15 @@ async function handleUpload(body) {
   const key = `${folder}/${timestamp}-${sanitizedFilename}`;
   
   // Generate pre-signed URL
+  // Note: ServerSideEncryption removed - use bucket default encryption instead
+  // Including it here adds x-amz-server-side-encryption to signed headers,
+  // which React Native/browsers can't send, causing signature mismatch
   const command = new PutObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
     ContentType: contentType,
-    ServerSideEncryption: 'AES256',
-    Metadata: {
-      'uploaded-by': 'messageai-app',
-      'upload-timestamp': new Date().toISOString()
-    }
+    // ServerSideEncryption: 'AES256', // REMOVED - use bucket default
+    // Metadata also removed to avoid signature issues
   });
   
   const presignedUrl = await getSignedUrl(s3Client, command, {
