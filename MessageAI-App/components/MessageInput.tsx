@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { COLORS } from '../utils/constants';
 import { FormalityAdjustmentModal } from './FormalityAdjustmentModal';
 import { adjustFormality } from '../services/context.service';
@@ -67,6 +68,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const handleSend = () => {
     const trimmedText = text.trim();
     if (trimmedText && !disabled) {
+      // Haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      
       // Clear typing indicator immediately on send
       if (onTyping && isTypingRef.current) {
         isTypingRef.current = false;

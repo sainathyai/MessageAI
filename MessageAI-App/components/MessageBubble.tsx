@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
+import Animated, { FadeInLeft, FadeInRight } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { OptimisticMessage } from '../types';
 import { Colors, Typography, Spacing, BorderRadius } from '../constants';
@@ -202,10 +203,13 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   };
 
   return (
-    <View style={[
-      styles.container,
-      isOwnMessage ? styles.ownMessageContainer : styles.otherMessageContainer
-    ]}>
+    <Animated.View 
+      entering={isOwnMessage ? FadeInRight.duration(300) : FadeInLeft.duration(300)}
+      style={[
+        styles.container,
+        isOwnMessage ? styles.ownMessageContainer : styles.otherMessageContainer
+      ]}
+    >
       {/* Only show sender name in group chats */}
       {!isOwnMessage && isGroupChat && message.senderName && (
         <Text style={styles.senderName}>{message.senderName}</Text>
@@ -290,7 +294,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         position={menuPosition}
         isOwnMessage={isOwnMessage}
       />
-    </View>
+    </Animated.View>
   );
 };
 

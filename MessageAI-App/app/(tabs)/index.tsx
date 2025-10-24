@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -266,7 +267,10 @@ export default function ChatsScreen() {
         {/* Floating Action Button (FAB) */}
         <TouchableOpacity 
           style={styles.fab}
-          onPress={() => setSearchVisible(true)}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setSearchVisible(true);
+          }}
           activeOpacity={0.8}
         >
           <Text style={styles.fabIcon}>✏️</Text>
