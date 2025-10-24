@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS } from '../../utils/constants';
+import { Colors, Spacing, BorderRadius } from '../../constants';
 import { scheduleLocalNotification } from '../../services/notification.service';
 import { Avatar } from '../../components/Avatar';
 import { LanguageSelector } from '../../components/LanguageSelector';
@@ -94,30 +95,37 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.content}>
-          {/* User Info */}
-          <View style={styles.profileSection}>
-            <Avatar 
-              name={user?.displayName || 'User'}
-              size="large"
-              isOnline={user?.isOnline}
-            />
-            <Text style={styles.displayName}>{user?.displayName}</Text>
-            <Text style={styles.email}>{user?.email}</Text>
-            
-            <View style={styles.statusBadge}>
-              <View style={[styles.statusDot, user?.isOnline && styles.statusOnline]} />
-              <Text style={styles.statusText}>
-                {user?.isOnline ? 'Online' : 'Offline'}
-              </Text>
+          {/* Profile Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardIcon}>👤</Text>
+              <Text style={styles.cardTitle}>Profile</Text>
+            </View>
+            <View style={styles.profileSection}>
+              <Avatar 
+                name={user?.displayName || 'User'}
+                size="large"
+                isOnline={user?.isOnline}
+              />
+              <Text style={styles.displayName}>{user?.displayName}</Text>
+              <Text style={styles.email}>{user?.email}</Text>
+              
+              <View style={styles.statusBadge}>
+                <View style={[styles.statusDot, user?.isOnline && styles.statusOnline]} />
+                <Text style={styles.statusText}>
+                  {user?.isOnline ? 'Online' : 'Offline'}
+                </Text>
+              </View>
             </View>
           </View>
 
-          {/* AI Settings Section */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View>
-                <Text style={styles.sectionTitle}>AI-Powered Features</Text>
-                <Text style={styles.sectionSubtitle}>
+          {/* AI Features Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardIcon}>🤖</Text>
+              <View style={styles.cardHeaderText}>
+                <Text style={styles.cardTitle}>AI-Powered Features</Text>
+                <Text style={styles.cardSubtitle}>
                   {aiConfigured ? 'Enhance your conversations' : 'Configuration required'}
                 </Text>
               </View>
@@ -238,26 +246,32 @@ export default function ProfileScreen() {
             )}
           </View>
 
-          {/* Actions */}
-          <View style={styles.actionsSection}>
-            <TouchableOpacity
-              style={styles.testButton}
-              onPress={handleTestNotification}
-            >
-              <Text style={styles.testButtonText}>🔔 Test Notification</Text>
-            </TouchableOpacity>
+          {/* App Actions Card */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardIcon}>⚙️</Text>
+              <Text style={styles.cardTitle}>App Settings</Text>
+            </View>
+            <View style={styles.actionsSection}>
+              <TouchableOpacity
+                style={styles.testButton}
+                onPress={handleTestNotification}
+              >
+                <Text style={styles.testButtonText}>🔔 Test Notification</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.signOutButton}
-              onPress={handleSignOut}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color={COLORS.WHITE} />
-              ) : (
-                <Text style={styles.signOutButtonText}>Sign Out</Text>
-              )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.signOutButton}
+                onPress={handleSignOut}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color={COLORS.WHITE} />
+                ) : (
+                  <Text style={styles.signOutButtonText}>Sign Out</Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Info */}
@@ -274,21 +288,52 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.WHITE,
+    backgroundColor: '#F5F7FA',
   },
   scrollView: {
     flex: 1,
   },
   content: {
     flex: 1,
-    padding: 24,
+    padding: Spacing.lg,
     paddingBottom: 100,
+    gap: Spacing.lg,
+  },
+  card: {
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  cardIcon: {
+    fontSize: 24,
+    marginRight: Spacing.sm,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  cardHeaderText: {
+    flex: 1,
   },
   profileSection: {
     alignItems: 'center',
-    paddingVertical: 40,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.LIGHT_GRAY,
+    paddingVertical: Spacing.lg,
   },
   avatar: {
     width: 80,
@@ -339,8 +384,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   actionsSection: {
-    marginTop: 32,
-    gap: 12,
+    gap: Spacing.md,
   },
   testButton: {
     backgroundColor: COLORS.PRIMARY,
@@ -381,27 +425,6 @@ const styles = StyleSheet.create({
     color: COLORS.PRIMARY,
     marginTop: 4,
     textAlign: 'center',
-  },
-  section: {
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: COLORS.DARK_GRAY,
-    marginBottom: 4,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: COLORS.GRAY,
-    marginTop: 2,
   },
   statusBadgeSuccess: {
     flexDirection: 'row',
