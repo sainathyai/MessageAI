@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Conversation } from '../types';
-import { COLORS } from '../utils/constants';
+import { Colors, Typography, Spacing, BorderRadius } from '../constants';
 import { formatConversationTime } from '../utils/dateFormat';
 import { Avatar } from './Avatar';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -18,6 +19,7 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
   otherUserName,
   onPress
 }) => {
+  const { theme } = useTheme();
   // Check if conversation is unread
   const isUnread = (() => {
     if (!conversation.lastMessage) return false;
@@ -50,7 +52,7 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
     : '';
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress}>
+    <TouchableOpacity style={[styles.container, { backgroundColor: theme.surface, borderBottomColor: theme.divider }]} onPress={onPress}>
       {/* Avatar */}
       <View style={styles.avatarContainer}>
         <Avatar 
@@ -62,14 +64,14 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
       {/* Content */}
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={[styles.name, isUnread && styles.boldText]}>
+          <Text style={[styles.name, { color: theme.textPrimary }]}>
             {displayName}
           </Text>
-          <Text style={styles.time}>{timeText}</Text>
+          <Text style={[styles.time, { color: theme.textSecondary }]}>{timeText}</Text>
         </View>
         
         <Text 
-          style={[styles.lastMessage, isUnread && styles.boldText]} 
+          style={[styles.lastMessage, { color: theme.textSecondary }]} 
           numberOfLines={1}
         >
           {lastMessageText}
@@ -77,7 +79,7 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
       </View>
 
       {/* Unread indicator */}
-      {isUnread && <View style={styles.unreadDot} />}
+      {isUnread && <View style={[styles.unreadDot, { backgroundColor: theme.badge }]} />}
     </TouchableOpacity>
   );
 };
@@ -85,27 +87,26 @@ const ConversationItemComponent: React.FC<ConversationItemProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    padding: 16,
-    backgroundColor: COLORS.WHITE,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.LIGHT_GRAY,
+    padding: Spacing.default,
+    // backgroundColor and borderBottomColor handled by theme
+    borderBottomWidth: 1.5,
     alignItems: 'center',
   },
   avatarContainer: {
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   avatar: {
     width: 50,
     height: 50,
-    borderRadius: 25,
+    borderRadius: BorderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: Spacing.md,
   },
   avatarText: {
-    color: COLORS.WHITE,
     fontSize: 20,
     fontWeight: 'bold',
+    // color handled by theme
   },
   content: {
     flex: 1,
@@ -113,30 +114,26 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   name: {
-    fontSize: 16,
-    color: COLORS.TEXT_PRIMARY,
+    ...Typography.contactName,
+    // color handled by theme
   },
   time: {
-    fontSize: 12,
-    color: COLORS.TEXT_SECONDARY,
+    ...Typography.timestamp,
+    // color handled by theme
   },
   lastMessage: {
-    fontSize: 14,
-    color: COLORS.TEXT_SECONDARY,
-  },
-  boldText: {
-    fontWeight: 'bold',
-    color: COLORS.TEXT_PRIMARY,
+    ...Typography.messagePreview,
+    // color handled by theme
   },
   unreadDot: {
     width: 10,
     height: 10,
-    borderRadius: 5,
-    backgroundColor: COLORS.PRIMARY,
-    marginLeft: 8,
+    borderRadius: BorderRadius.full,
+    // backgroundColor handled by theme
+    marginLeft: Spacing.sm,
   },
 });
 

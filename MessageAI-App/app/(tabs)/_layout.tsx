@@ -1,30 +1,69 @@
 import { Tabs } from 'expo-router';
+import { View, Platform, StyleSheet } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRef } from 'react';
 import { COLORS } from '../../utils/constants';
+import { Colors } from '../../constants'; // New teal theme
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  
+  // Capture initial bottom inset ONCE using ref (never changes)
+  const fixedBottomInsetRef = useRef<number | null>(null);
+  if (fixedBottomInsetRef.current === null) {
+    fixedBottomInsetRef.current = Platform.OS === 'android' ? Math.max(insets.bottom, 20) : 0;
+  }
+
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: COLORS.PRIMARY,
-        tabBarInactiveTintColor: COLORS.GRAY,
-        tabBarStyle: {
-          backgroundColor: COLORS.WHITE,
-          borderTopColor: COLORS.LIGHT_GRAY,
-        },
-        headerStyle: {
-          backgroundColor: COLORS.PRIMARY,
-        },
-        headerTintColor: COLORS.WHITE,
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-      }}
-    >
+    <View style={[styles.container, { backgroundColor: theme.primary }]}>
+      <Tabs
+        screenOptions={{
+          tabBarActiveTintColor: theme.primary, // Teal accent
+          tabBarInactiveTintColor: theme.textSecondary, // Gray for inactive
+          tabBarStyle: {
+            backgroundColor: theme.surface,
+            borderTopColor: theme.divider,
+            borderTopWidth: 1,
+            paddingTop: 8,
+            paddingBottom: Platform.OS === 'ios' ? 20 : 12,
+            height: Platform.OS === 'ios' ? 85 : 65,
+            elevation: 8,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.1,
+            shadowRadius: 3,
+          },
+          tabBarLabelStyle: {
+            fontSize: 12,
+            fontWeight: '600',
+            marginBottom: 4,
+          },
+          headerStyle: {
+            backgroundColor: theme.primary, // Teal header
+          },
+          headerTintColor: theme.textOnPrimary,
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Chats',
           tabBarLabel: 'Chats',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.tabIcon, focused && styles.tabIconFocused]}>
+              <View style={styles.iconContainer}>
+                <View style={[styles.chatBubble, { borderColor: color }]}>
+                  <View style={[styles.chatDots, { backgroundColor: color }]} />
+                </View>
+              </View>
+            </View>
+          ),
+          headerShown: false,
         }}
       />
       <Tabs.Screen
@@ -32,9 +71,81 @@ export default function TabsLayout() {
         options={{
           title: 'Profile',
           tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={[styles.tabIcon, focused && styles.tabIconFocused]}>
+              <View style={[styles.profileCircle, { borderColor: color }]}>
+                <View style={[styles.profileHead, { backgroundColor: color }]} />
+                <View style={[styles.profileBody, { backgroundColor: color }]} />
+              </View>
+            </View>
+          ),
         }}
       />
     </Tabs>
+    
+    {/* Footer below tabs */}
+    {Platform.OS === 'android' && (
+      <View style={[styles.bottomSafeArea, { height: fixedBottomInsetRef.current, backgroundColor: theme.primary }]} />
+    )}
+  </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    // backgroundColor handled by theme
+  },
+  tabIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 28,
+    height: 28,
+  },
+  tabIconFocused: {
+    transform: [{ scale: 1.1 }],
+  },
+  iconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatBubble: {
+    width: 24,
+    height: 20,
+    borderWidth: 2.5,
+    borderRadius: 12,
+    borderBottomLeftRadius: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chatDots: {
+    width: 12,
+    height: 3,
+    borderRadius: 1.5,
+  },
+  profileCircle: {
+    width: 24,
+    height: 24,
+    borderWidth: 2.5,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  profileHead: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    marginTop: 2,
+  },
+  profileBody: {
+    width: 14,
+    height: 8,
+    borderRadius: 7,
+    marginTop: 1,
+  },
+  bottomSafeArea: {
+    // backgroundColor handled by theme
+  },
+});
 

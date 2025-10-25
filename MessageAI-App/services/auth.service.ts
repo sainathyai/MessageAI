@@ -5,8 +5,11 @@ import {
   updateProfile,
   User as FirebaseUser,
   onAuthStateChanged,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  GoogleAuthProvider,
+  signInWithCredential
 } from 'firebase/auth';
+import * as Google from 'expo-auth-session/providers/google';
 import { 
   doc, 
   setDoc, 
@@ -99,6 +102,67 @@ export const signIn = async (
   } catch (error: any) {
     console.error('Sign in error:', error);
     throw new Error(getAuthErrorMessage(error.code));
+  }
+};
+
+/**
+ * Sign in with Google
+ */
+export const signInWithGoogle = async (idToken: string): Promise<User> => {
+  try {
+    // Create a Google credential with the token
+    const credential = GoogleAuthProvider.credential(idToken);
+    
+    // Sign in with credential
+    const userCredential = await signInWithCredential(auth, credential);
+    const firebaseUser = userCredential.user;
+
+    // Check if user document exists in Firestore
+    const userRef = doc(db, COLLECTIONS.USERS, firebaseUser.uid);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      // Create new user document for first-time Google sign-in
+      const userData: Omit<User, 'uid'> = {
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName || 'User',
+        photoURL: firebaseUser.photoURL || undefined,
+        isOnline: true,
+        lastSeen: serverTimestamp() as any,
+        createdAt: serverTimestamp() as any,
+      };
+
+      await setDoc(userRef, userData);
+
+      return {
+        uid: firebaseUser.uid,
+        ...userData,
+        lastSeen: new Date(),
+        createdAt: new Date(),
+      };
+    } else {
+      // Update existing user's online status
+      await updateDoc(userRef, {
+        isOnline: true,
+        lastSeen: serverTimestamp(),
+      });
+
+      const userData = userDoc.data();
+
+      return {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email!,
+        displayName: firebaseUser.displayName || userData.displayName,
+        photoURL: firebaseUser.photoURL || userData.photoURL,
+        isOnline: true,
+        lastSeen: new Date(),
+        pushToken: userData.pushToken,
+        createdAt: userData.createdAt?.toDate() || new Date(),
+      };
+    }
+  } catch (error: any) {
+    console.error('Google sign in error:', error);
+    throw new Error(getAuthErrorMessage(error.code) || 'Failed to sign in with Google');
   }
 };
 

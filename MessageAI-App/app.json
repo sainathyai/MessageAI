@@ -2,67 +2,26 @@
   "expo": {
     "name": "MessageAI",
     "slug": "messageai-app",
-    "owner": "sainathyai",
+    "owner": "sainathayai",
     "version": "1.0.0",
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.messageai.app",
-      "infoPlist": {
-        "NSCameraUsageDescription": "Allow MessageAI to access your camera to take photos.",
-        "NSPhotoLibraryUsageDescription": "Allow MessageAI to access your photo library to select images."
-      }
+      "bundleIdentifier": "com.messageai.app"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "package": "com.messageai.app",
-      "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
-      ],
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "package": "com.messageai.app"
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "plugins": [
-      "expo-router",
-      "expo-sqlite",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#ffffff",
-          "sounds": []
-        }
-      ]
-    ],
-    "notification": {
-      "icon": "./assets/icon.png",
-      "color": "#007AFF"
-    },
-    "scheme": "messageai",
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "03d53c34-b843-4528-81d1-8549ab706b52"
-      }
+        "projectId": "a6fe2c75-0ea8-412b-89e7-45979b8ce533"
+      },
+      "EXPO_PUBLIC_AWS_REGION": "us-east-1",
+      "EXPO_PUBLIC_S3_BUCKET": "messageai-media-production",
+      "EXPO_PUBLIC_API_GATEWAY_URL": "https://plk7eg9jc9.execute-api.us-east-1.amazonaws.com/prod"
     }
   }
 }

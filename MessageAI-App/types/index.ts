@@ -25,8 +25,20 @@ export interface Message {
   timestamp: Date | Timestamp;
   status: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   conversationId: string;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'video' | 'voice' | 'file' | 'location' | 'contact';
   imageUrl?: string;
+  // Media properties (for local-first storage)
+  media?: {
+    localUri?: string;      // Local device path (Phase 1)
+    cloudUrl?: string;      // Cloud storage URL (Phase 2)
+    thumbnailUrl?: string;  // Thumbnail for videos
+    width?: number;         // Image/video dimensions
+    height?: number;
+    size?: number;          // File size in bytes
+    duration?: number;      // Video/voice duration in seconds
+    mimeType?: string;      // MIME type
+    filename?: string;      // Original filename
+  };
 }
 
 /**
@@ -66,6 +78,7 @@ export interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signInWithGoogle: (idToken: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 

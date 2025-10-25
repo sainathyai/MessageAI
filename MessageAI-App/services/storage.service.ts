@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { Message, Conversation, OptimisticMessage } from '../types';
+import { toDate } from '../utils/dateFormat';
 
 // Only import SQLite on mobile platforms
 let SQLite: any = null;
@@ -13,6 +14,9 @@ if (Platform.OS !== 'web') {
     console.error('Failed to open database:', error);
   }
 }
+
+// Export db for use in other services
+export { db };
 
 // Check if SQLite is available
 const isSQLiteAvailable = (): boolean => {
@@ -40,10 +44,34 @@ export const initDatabase = (): void => {
         timestamp INTEGER NOT NULL,
         status TEXT NOT NULL,
         type TEXT NOT NULL,
+        imageUrl TEXT,
+        media TEXT,
         synced INTEGER DEFAULT 0,
         isOptimistic INTEGER DEFAULT 0
       );
     `);
+
+    // Migration: Add imageUrl column if it doesn't exist (for existing databases)
+    try {
+      db.execSync(`ALTER TABLE messages ADD COLUMN imageUrl TEXT;`);
+      console.log('✅ Added imageUrl column to messages table');
+    } catch (error: any) {
+      // Column already exists or other error - this is fine
+      if (!error?.message?.includes('duplicate column name')) {
+        console.log('ℹ️  imageUrl column migration skipped (likely already exists)');
+      }
+    }
+
+    // Migration: Add media column if it doesn't exist (for existing databases)
+    try {
+      db.execSync(`ALTER TABLE messages ADD COLUMN media TEXT;`);
+      console.log('✅ Added media column to messages table');
+    } catch (error: any) {
+      // Column already exists or other error - this is fine
+      if (!error?.message?.includes('duplicate column name')) {
+        console.log('ℹ️  media column migration skipped (likely already exists)');
+      }
+    }
 
     // Create index on conversationId for faster queries
     db.execSync(`
@@ -85,6 +113,24 @@ export const initDatabase = (): void => {
       );
     `);
 
+    // Create translations cache table
+    db.execSync(`
+      CREATE TABLE IF NOT EXISTS translations (
+        id TEXT PRIMARY KEY,
+        message_id TEXT NOT NULL,
+        source_text TEXT NOT NULL,
+        target_language TEXT NOT NULL,
+        translation TEXT NOT NULL,
+        detected_language TEXT,
+        created_at INTEGER NOT NULL
+      );
+    `);
+
+    db.execSync(`
+      CREATE INDEX IF NOT EXISTS idx_translations_message 
+      ON translations(message_id, target_language);
+    `);
+
     console.log('✅ SQLite database initialized successfully');
   } catch (error) {
     console.error('❌ Error initializing database:', error);
@@ -101,8 +147,8 @@ export const saveMessageToLocal = async (message: OptimisticMessage): Promise<vo
   try {
     const statement = await db.prepareAsync(`
       INSERT OR REPLACE INTO messages 
-      (id, conversationId, text, senderId, senderName, timestamp, status, type, synced, isOptimistic)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, conversationId, text, senderId, senderName, timestamp, status, type, imageUrl, media, synced, isOptimistic)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     await statement.executeAsync([
@@ -111,9 +157,11 @@ export const saveMessageToLocal = async (message: OptimisticMessage): Promise<vo
       message.text,
       message.senderId,
       message.senderName,
-      message.timestamp instanceof Date ? message.timestamp.getTime() : new Date(message.timestamp).getTime(),
+      (toDate(message.timestamp) || new Date()).getTime(),
       message.status,
       message.type,
+      message.imageUrl || null,
+      message.media ? JSON.stringify(message.media) : null,
       message.isOptimistic ? 0 : 1, // Not synced if optimistic
       message.isOptimistic ? 1 : 0
     ]);
@@ -132,7 +180,10 @@ export const getMessagesFromLocal = async (conversationId: string): Promise<Opti
   if (!isSQLiteAvailable()) return [];
   
   try {
-    const result = await db.getAllAsync<{
+    const result = (await db.getAllAsync(
+      'SELECT * FROM messages WHERE conversationId = ? ORDER BY timestamp ASC',
+      [conversationId]
+    )) as Array<{
       id: string;
       conversationId: string;
       text: string;
@@ -141,12 +192,11 @@ export const getMessagesFromLocal = async (conversationId: string): Promise<Opti
       timestamp: number;
       status: string;
       type: string;
+      imageUrl: string | null;
+      media: string | null;
       synced: number;
       isOptimistic: number;
-    }>(
-      'SELECT * FROM messages WHERE conversationId = ? ORDER BY timestamp ASC',
-      [conversationId]
-    );
+    }>;
 
     return result.map(row => ({
       id: row.id,
@@ -157,11 +207,40 @@ export const getMessagesFromLocal = async (conversationId: string): Promise<Opti
       timestamp: new Date(row.timestamp),
       status: row.status as any,
       type: row.type as any,
+      imageUrl: row.imageUrl || undefined,
+      media: row.media ? JSON.parse(row.media) : undefined,
       isOptimistic: row.isOptimistic === 1
     }));
   } catch (error) {
     console.error('Error getting messages from local storage:', error);
     return [];
+  }
+};
+
+/**
+ * Delete an optimistic message from cache by ID
+ */
+export const deleteOptimisticMessageFromLocal = async (messageId: string): Promise<void> => {
+  if (!isSQLiteAvailable()) return;
+  
+  try {
+    await db.runAsync('DELETE FROM messages WHERE id = ? AND isOptimistic = 1', [messageId]);
+  } catch (error) {
+    console.error('Error deleting optimistic message from local storage:', error);
+  }
+};
+
+/**
+ * Clear all messages for a conversation from cache
+ */
+export const clearMessagesFromLocal = async (conversationId: string): Promise<void> => {
+  if (!isSQLiteAvailable()) return;
+  
+  try {
+    await db.runAsync('DELETE FROM messages WHERE conversationId = ?', [conversationId]);
+    console.log('🗑️ Cleared all cached messages for conversation:', conversationId);
+  } catch (error) {
+    console.error('Error clearing messages from local storage:', error);
   }
 };
 
@@ -172,7 +251,9 @@ export const getUnsyncedMessages = async (): Promise<OptimisticMessage[]> => {
   if (!isSQLiteAvailable()) return [];
   
   try {
-    const result = await db.getAllAsync<{
+    const result = (await db.getAllAsync(
+      'SELECT * FROM messages WHERE synced = 0 AND isOptimistic = 0 ORDER BY timestamp ASC'
+    )) as Array<{
       id: string;
       conversationId: string;
       text: string;
@@ -182,9 +263,7 @@ export const getUnsyncedMessages = async (): Promise<OptimisticMessage[]> => {
       status: string;
       type: string;
       isOptimistic: number;
-    }>(
-      'SELECT * FROM messages WHERE synced = 0 AND isOptimistic = 0 ORDER BY timestamp ASC'
-    );
+    }>;
 
     return result.map(row => ({
       id: row.id,
@@ -256,8 +335,8 @@ export const saveConversationToLocal = async (conversation: Conversation): Promi
       conversation.groupName || null,
       conversation.lastMessage?.text || null,
       conversation.lastMessage?.senderId || null,
-      conversation.lastMessage ? new Date(conversation.lastMessage.timestamp).getTime() : null,
-      new Date(conversation.lastActivity).getTime(),
+      conversation.lastMessage ? (toDate(conversation.lastMessage.timestamp) || new Date()).getTime() : null,
+      (toDate(conversation.lastActivity) || new Date()).getTime(),
       JSON.stringify(conversation.readStatus)
     ]);
 
@@ -268,13 +347,13 @@ export const saveConversationToLocal = async (conversation: Conversation): Promi
 };
 
 /**
- * Get all conversations from local storage
+ * Get a single conversation from local storage by ID
  */
-export const getConversationsFromLocal = async (): Promise<Conversation[]> => {
-  if (!isSQLiteAvailable()) return [];
+export const getConversationFromLocal = async (conversationId: string): Promise<Conversation | null> => {
+  if (!isSQLiteAvailable()) return null;
   
   try {
-    const result = await db.getAllAsync<{
+    const result = (await db.getFirstAsync('SELECT * FROM conversations WHERE id = ?', [conversationId])) as {
       id: string;
       isGroup: number;
       participants: string;
@@ -284,7 +363,48 @@ export const getConversationsFromLocal = async (): Promise<Conversation[]> => {
       lastMessageTimestamp: number | null;
       lastActivity: number;
       readStatus: string;
-    }>('SELECT * FROM conversations ORDER BY lastActivity DESC');
+    } | null;
+
+    if (!result) return null;
+
+    return {
+      id: result.id,
+      isGroup: result.isGroup === 1,
+      participants: JSON.parse(result.participants),
+      groupName: result.groupName || undefined,
+      lastMessage: result.lastMessageText ? {
+        text: result.lastMessageText,
+        senderId: result.lastMessageSenderId!,
+        senderName: '', // Will be filled by the app
+        timestamp: new Date(result.lastMessageTimestamp!)
+      } : undefined,
+      lastActivity: new Date(result.lastActivity),
+      readStatus: JSON.parse(result.readStatus)
+    };
+  } catch (error) {
+    console.error('Error getting conversation from local storage:', error);
+    return null;
+  }
+};
+
+/**
+ * Get all conversations from local storage
+ */
+export const getConversationsFromLocal = async (): Promise<Conversation[]> => {
+  if (!isSQLiteAvailable()) return [];
+  
+  try {
+    const result = (await db.getAllAsync('SELECT * FROM conversations ORDER BY lastActivity DESC')) as Array<{
+      id: string;
+      isGroup: number;
+      participants: string;
+      groupName: string | null;
+      lastMessageText: string | null;
+      lastMessageSenderId: string | null;
+      lastMessageTimestamp: number | null;
+      lastActivity: number;
+      readStatus: string;
+    }>;
 
     return result.map(row => ({
       id: row.id,
@@ -342,12 +462,12 @@ export const getUserFromCache = async (uid: string): Promise<{ uid: string; disp
   if (!isSQLiteAvailable()) return null;
   
   try {
-    const result = await db.getAllAsync<{
+    const result = (await db.getAllAsync('SELECT * FROM users_cache WHERE uid = ?', [uid])) as Array<{
       uid: string;
       email: string;
       displayName: string;
       photoURL: string | null;
-    }>('SELECT * FROM users_cache WHERE uid = ?', [uid]);
+    }>;
 
     if (result.length === 0) return null;
 
