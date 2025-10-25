@@ -15,17 +15,27 @@ export const useGoogleSignIn = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Configure Google Auth request
+  // Check if Google Auth is configured
+  const hasGoogleConfig = !!(
+    process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID &&
+    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID
+  );
+
+  // Configure Google Auth request only if credentials are available
   // Note: You need to add these values to your .env file:
   // EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID - from Firebase Console
   // EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID - from Firebase Console (iOS)
   // EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID - from Firebase Console (Android)
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  });
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest(
+    hasGoogleConfig ? {
+      clientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+      androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    } : {
+      clientId: 'dummy-client-id.apps.googleusercontent.com', // Prevents crash when not configured
+    }
+  );
 
   // Handle the authentication response
   useEffect(() => {
@@ -59,8 +69,13 @@ export const useGoogleSignIn = () => {
   };
 
   const signIn = async () => {
+    if (!hasGoogleConfig) {
+      setError('Google Sign-In is not configured. Please use email/password login.');
+      return;
+    }
+    
     if (!request) {
-      setError('Google Sign-In is not configured');
+      setError('Google Sign-In is not ready');
       return;
     }
     
@@ -78,7 +93,7 @@ export const useGoogleSignIn = () => {
     signInWithGoogle: signIn,
     loading,
     error,
-    isReady: !!request,
+    isReady: hasGoogleConfig && !!request,
   };
 };
 
