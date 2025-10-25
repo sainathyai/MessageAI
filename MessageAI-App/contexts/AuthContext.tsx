@@ -5,6 +5,7 @@ import {
   signIn as authSignIn,
   signUp as authSignUp,
   signOut as authSignOut,
+  signInWithGoogle as authSignInWithGoogle,
   subscribeToAuthState,
   getUserData,
   updateOnlineStatus
@@ -147,6 +148,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   /**
+   * Sign in with Google
+   */
+  const signInWithGoogle = async (idToken: string): Promise<void> => {
+    try {
+      const userData = await authSignInWithGoogle(idToken);
+      setUser(userData);
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
+  /**
    * Sign out current user
    */
   const signOut = async (): Promise<void> => {
@@ -163,6 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     signIn,
     signUp,
+    signInWithGoogle,
     signOut,
   };
 

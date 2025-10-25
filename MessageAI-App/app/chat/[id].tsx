@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   ImageBackground,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +23,7 @@ import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
 import { MessageInput } from '../../components/MessageInput';
 import { TypingIndicator } from '../../components/TypingIndicator';
+import { ThemedAlert } from '../../components/ThemedAlert';
 import { GroupMembersModal } from '../../components/GroupMembersModal';
 import { SmartRepliesBar } from '../../components/SmartRepliesBar';
 import { getMessagesFromLocal, saveMessageToLocal, getUserFromCache, saveUserToCache, getConversationFromLocal, clearMessagesFromLocal } from '../../services/storage.service';
@@ -551,7 +551,7 @@ export default function ChatScreen() {
       const online = await isOnline();
 
       if (!online) {
-        Alert.alert('Offline', 'Image upload requires an internet connection. Please try again when online.');
+        ThemedAlert.alert('Offline', 'Image upload requires an internet connection. Please try again when online.');
         return;
       }
 
@@ -615,7 +615,7 @@ export default function ChatScreen() {
           )
         );
 
-        Alert.alert('Upload Failed', 'Failed to upload image. Please try again.');
+        ThemedAlert.alert('Upload Failed', 'Failed to upload image. Please try again.');
       }
     } catch (error) {
       console.error('❌ Error sending image:', error);
@@ -631,7 +631,7 @@ export default function ChatScreen() {
       const online = await isOnline();
 
       if (!online) {
-        Alert.alert('Offline', 'Image upload requires an internet connection. Please try again when online.');
+        ThemedAlert.alert('Offline', 'Image upload requires an internet connection. Please try again when online.');
         return;
       }
 
@@ -670,7 +670,7 @@ export default function ChatScreen() {
       const online = await isOnline();
 
       if (!online) {
-        Alert.alert('Offline', 'Video upload requires an internet connection. Please try again when online.');
+        ThemedAlert.alert('Offline', 'Video upload requires an internet connection. Please try again when online.');
         return;
       }
 
@@ -745,7 +745,7 @@ export default function ChatScreen() {
           )
         );
 
-        Alert.alert('Upload Failed', 'Failed to upload video. Please try again.');
+        ThemedAlert.alert('Upload Failed', 'Failed to upload video. Please try again.');
       }
     } catch (error) {
       console.error('❌ Error sending video:', error);
@@ -781,7 +781,7 @@ export default function ChatScreen() {
               : msg
           )
         );
-        Alert.alert('Failed to Send', error, [
+        ThemedAlert.alert('Failed to Send', error, [
           { text: 'Cancel' },
           { text: 'Retry', onPress: () => handleRetryMessage(message) }
         ]);
@@ -802,7 +802,7 @@ export default function ChatScreen() {
       <TouchableOpacity
         onLongPress={() => {
           if (item.status === 'failed') {
-            Alert.alert('Failed Message', 'Would you like to retry sending this message?', [
+            ThemedAlert.alert('Failed Message', 'Would you like to retry sending this message?', [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Retry', onPress: () => handleRetryMessage(item) },
               { text: 'Delete', style: 'destructive', onPress: () => {
@@ -833,14 +833,14 @@ export default function ChatScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.outerContainer}>
+    <>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.primary }]} edges={['top']}>
         <KeyboardAvoidingView
-          style={styles.container}
+          style={styles.keyboardView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-          enabled={true}
+          keyboardVerticalOffset={0}
         >
+          <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -956,23 +956,25 @@ export default function ChatScreen() {
           onSendVideo={handleSendVideo}
           onTyping={handleTyping} 
         />
+        </View>
       </KeyboardAvoidingView>
 
-      {/* Fixed bottom safe area for Android navigation */}
-      {Platform.OS === 'android' && <View style={[styles.bottomSafeArea, { height: fixedBottomInsetRef.current }]} />}
-      
-      </View>
+          {/* Teal Footer - Fixed at bottom, outside keyboard view */}
+          {Platform.OS === 'android' && (
+            <View style={[styles.tealFooter, { height: fixedBottomInsetRef.current }]} />
+          )}
+        </SafeAreaView>
 
-      {/* Group Members Modal */}
-      <GroupMembersModal
-        visible={showGroupMembers}
-        onClose={() => setShowGroupMembers(false)}
-        participantIds={participantIds}
-        currentUserId={user?.uid || ''}
-        onMemberPress={handleMemberPress}
-      />
-    </SafeAreaView>
-  );
+        {/* Group Members Modal */}
+        <GroupMembersModal
+          visible={showGroupMembers}
+          onClose={() => setShowGroupMembers(false)}
+          participantIds={participantIds}
+          currentUserId={user?.uid || ''}
+          onMemberPress={handleMemberPress}
+        />
+      </>
+    );
 }
 
 const styles = StyleSheet.create({
@@ -980,16 +982,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.primary, // Changed to teal
   },
+  keyboardView: {
+    flex: 1,
+  },
   outerContainer: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F7FA',
   },
   bottomSafeArea: {
     backgroundColor: Colors.primary, // Changed to teal
+  },
+  tealFooter: {
+    backgroundColor: Colors.primary,
+    width: '100%',
   },
   centerContainer: {
     flex: 1,

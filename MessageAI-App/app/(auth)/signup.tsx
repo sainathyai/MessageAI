@@ -8,7 +8,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   ScrollView,
   Image,
 } from 'react-native';
@@ -19,6 +18,9 @@ import { Colors } from '../../constants/Colors';
 import { Spacing } from '../../constants/Spacing';
 import { BorderRadius } from '../../constants/BorderRadius';
 import { MAX_DISPLAY_NAME_LENGTH } from '../../utils/constants';
+import { ThemedAlert } from '../../components/ThemedAlert';
+import { useGoogleSignIn } from '../../hooks/useGoogleSignIn';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export default function SignupScreen() {
   const [displayName, setDisplayName] = useState('');
@@ -27,44 +29,60 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
+  const { theme, isDark } = useTheme();
   const router = useRouter();
+
+  // Google Sign-In hook
+  const { 
+    signInWithGoogle: googleSignIn, 
+    loading: googleLoading, 
+    error: googleError,
+    isReady: isGoogleReady 
+  } = useGoogleSignIn();
+
+  // Show Google Sign-In error if any
+  React.useEffect(() => {
+    if (googleError) {
+      ThemedAlert.alert('Google Sign-In Failed', googleError);
+    }
+  }, [googleError]);
 
   const handleSignup = async () => {
     // Validation
     if (!displayName.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+      ThemedAlert.alert('Error', 'Please enter your name');
       return;
     }
 
     if (displayName.trim().length > MAX_DISPLAY_NAME_LENGTH) {
-      Alert.alert('Error', `Name must be less than ${MAX_DISPLAY_NAME_LENGTH} characters`);
+      ThemedAlert.alert('Error', `Name must be less than ${MAX_DISPLAY_NAME_LENGTH} characters`);
       return;
     }
 
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email');
+      ThemedAlert.alert('Error', 'Please enter your email');
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      ThemedAlert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
     if (!password) {
-      Alert.alert('Error', 'Please enter a password');
+      ThemedAlert.alert('Error', 'Please enter a password');
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      ThemedAlert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      ThemedAlert.alert('Error', 'Passwords do not match');
       return;
     }
 
@@ -75,15 +93,26 @@ export default function SignupScreen() {
       // Navigation will be handled by auth state change
     } catch (error: any) {
       console.error('Signup error:', error);
-      Alert.alert('Signup Failed', error.message || 'Please try again');
+      ThemedAlert.alert('Signup Failed', error.message || 'Please try again');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await googleSignIn();
+    } catch (error) {
+      // Error is already handled in the hook
+      console.error('Google Sign-In button error:', error);
     }
   };
 
   const navigateToLogin = () => {
     router.back();
   };
+
+  const isLoading = loading || googleLoading;
 
   return (
     <LinearGradient
@@ -113,9 +142,9 @@ export default function SignupScreen() {
             </View>
 
             {/* Signup Form Card */}
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>Create Account</Text>
-              <Text style={styles.cardSubtitle}>Sign up to get started</Text>
+            <View style={[styles.card, { backgroundColor: theme.surface }]}>
+              <Text style={[styles.cardTitle, { color: theme.textPrimary }]}>Create Account</Text>
+              <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>Sign up to get started</Text>
 
               <View style={styles.form}>
                 <View style={styles.inputContainer}>
@@ -182,9 +211,9 @@ export default function SignupScreen() {
 
                 {/* Signup Button */}
                 <TouchableOpacity
-                  style={[styles.button, loading && styles.buttonDisabled]}
+                  style={[styles.button, isLoading && styles.buttonDisabled]}
                   onPress={handleSignup}
-                  disabled={loading}
+                  disabled={isLoading}
                   activeOpacity={0.8}
                 >
                   {loading ? (
@@ -194,10 +223,38 @@ export default function SignupScreen() {
                   )}
                 </TouchableOpacity>
 
+                {/* OR Divider */}
+                <View style={styles.dividerContainer}>
+                  <View style={styles.divider} />
+                  <Text style={styles.dividerText}>OR</Text>
+                  <View style={styles.divider} />
+                </View>
+
+                {/* Google Sign-In Button */}
+                <TouchableOpacity
+                  style={[
+                    styles.googleButton,
+                    { 
+                      backgroundColor: theme.surface,
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#DADCE0'
+                    },
+                    (isLoading || !isGoogleReady) && styles.buttonDisabled
+                  ]}
+                  onPress={handleGoogleSignIn}
+                  disabled={isLoading || !isGoogleReady}
+                  activeOpacity={0.8}
+                >
+                  {googleLoading ? (
+                    <ActivityIndicator color={theme.textPrimary} />
+                  ) : (
+                    <Text style={[styles.googleButtonText, { color: theme.textPrimary }]}>Sign up with Google</Text>
+                  )}
+                </TouchableOpacity>
+
                 {/* Login Link */}
                 <View style={styles.loginContainer}>
                   <Text style={styles.loginText}>Already have an account? </Text>
-                  <TouchableOpacity onPress={navigateToLogin} disabled={loading}>
+                  <TouchableOpacity onPress={navigateToLogin} disabled={isLoading}>
                     <Text style={styles.loginLink}>Sign In</Text>
                   </TouchableOpacity>
                 </View>
@@ -225,77 +282,79 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xl * 2,
+    paddingVertical: Spacing.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: Spacing.xl * 2,
+    marginBottom: Spacing.lg,
   },
   logoContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
     overflow: 'hidden',
   },
   logo: {
-    width: 160,
-    height: 160,
+    width: 120,
+    height: 120,
   },
   appTitle: {
-    fontSize: 42,
+    fontSize: 32,
     fontWeight: '700',
     color: Colors.white,
-    marginBottom: Spacing.xs,
+    marginBottom: Spacing.xs - 2,
     letterSpacing: -1,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.white90,
     textAlign: 'center',
   },
   card: {
     backgroundColor: 'rgba(255, 255, 255, 0.98)',
     borderRadius: BorderRadius.lg,
-    padding: Spacing.lg + 4,
+    padding: Spacing.lg,
+    width: '85%',
+    alignSelf: 'center',
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 15,
+    elevation: 8,
   },
   cardTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: '700',
     color: Colors.primary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#7A7A9D',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   form: {
     width: '100%',
   },
   inputContainer: {
-    marginBottom: Spacing.md + 4,
+    marginBottom: Spacing.sm + 2,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#5A5A7A',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   input: {
     borderWidth: 1.5,
     borderColor: 'rgba(20, 184, 166, 0.25)',
     borderRadius: BorderRadius.md,
-    padding: 12,
-    fontSize: 15,
+    padding: 10,
+    fontSize: 14,
     backgroundColor: 'rgba(20, 184, 166, 0.08)',
     color: '#383854',
   },
@@ -319,6 +378,58 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.lg,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.divider,
+  },
+  dividerText: {
+    marginHorizontal: Spacing.md,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 11,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#DADCE0',
+  },
+  googleIconContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 2,
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  googleIconG: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#4285F4',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  googleButtonText: {
+    color: '#3C4043',
+    fontSize: 14,
+    fontWeight: '500',
+    letterSpacing: 0.25,
   },
   loginContainer: {
     flexDirection: 'row',

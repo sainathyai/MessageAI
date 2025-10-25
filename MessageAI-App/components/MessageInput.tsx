@@ -288,7 +288,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         <TouchableOpacity
           style={[
             styles.attachButton,
-            { backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0' }
+            { backgroundColor: isDark ? '#2a2a2a' : '#f5f5f5' }
           ]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -296,7 +296,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           }}
           disabled={disabled}
         >
-          <Ionicons name="add" size={28} color={Colors.primary} />
+          <Ionicons name="add" size={24} color={disabled ? Colors.textSecondary : Colors.primary} />
         </TouchableOpacity>
 
         <TextInput
@@ -405,35 +405,35 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    padding: 12,
-    paddingBottom: Platform.OS === 'android' ? 20 : 12,
+    padding: 8,
+    paddingBottom: Platform.OS === 'android' ? 12 : 8,
     borderTopWidth: 1,
     alignItems: 'flex-end',
   },
   input: {
     flex: 1,
     borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     marginRight: 8,
-    fontSize: 16,
+    fontSize: 15,
     maxHeight: 100,
   },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonText: {
     color: COLORS.WHITE,
-    fontSize: 20,
+    fontSize: 18,
   },
   attachButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
