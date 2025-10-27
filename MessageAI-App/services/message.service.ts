@@ -20,6 +20,8 @@ import { sendMessageNotification } from './push-notification-sender.service';
 import { getTime } from '../utils/dateFormat';
 import type { UploadProgress } from './cloud-storage.service';
 import { uploadImageToS3, uploadVideoToS3 } from './cloud-storage.service';
+import { uploadMediaToS3 } from './media.service';
+import * as FileSystem from 'expo-file-system/legacy';
 
 /**
  * Send a message to a conversation
@@ -512,6 +514,75 @@ export const sendVideoMessage = async (
   } catch (error) {
     console.error('❌ Error sending video message:', error);
     throw new Error(`Failed to send video: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Send a voice message
+ */
+export const sendVoiceMessage = async (
+  conversationId: string,
+  localAudioUri: string,
+  senderId: string,
+  senderName: string,
+  duration: number,
+  onProgress?: (progress: UploadProgress) => void
+): Promise<string> => {
+  try {
+    // Generate unique filename
+    const audioFilename = `voice_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.m4a`;
+    
+    // Upload audio to S3
+    console.log('📤 Uploading voice message to S3...');
+    const audioUploadResult = await uploadMediaToS3(
+      localAudioUri,
+      'audio'
+    );
+    
+    console.log('✅ Voice S3 upload complete:', audioUploadResult);
+    
+    // Get file size
+    const fileInfo = await FileSystem.getInfoAsync(localAudioUri);
+    const size = fileInfo.exists ? (fileInfo.size || 0) : 0;
+
+    // Create message document in Firestore
+    const messageData = {
+      conversationId,
+      type: 'voice',
+      text: '🎤 Voice message',
+      senderId,
+      senderName,
+      timestamp: serverTimestamp(),
+      status: 'sent',
+      media: {
+        cloudUrl: audioUploadResult,
+        duration,
+        size,
+        mimeType: 'audio/m4a',
+      }
+    };
+
+    const messagesRef = collection(db, 'messages');
+    const docRef = await addDoc(messagesRef, messageData);
+    console.log('✅ Voice message saved to Firestore:', docRef.id);
+
+    // Update conversation last message
+    await updateConversationLastMessage(conversationId, {
+      text: '🎤 Voice message',
+      senderId,
+      timestamp: new Date()
+    });
+
+    // Send push notification
+    sendMessageNotification(conversationId, senderId, senderName, '🎤 Voice message')
+      .catch(error => {
+        console.error('Push notification failed (non-blocking):', error);
+      });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('❌ Error sending voice message:', error);
+    throw new Error(`Failed to send voice message: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
 

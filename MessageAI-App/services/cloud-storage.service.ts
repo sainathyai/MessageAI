@@ -34,6 +34,8 @@ async function getPreSignedUrl(
   folder: string = 'images'
 ): Promise<{ uploadUrl: string; key: string }> {
   try {
+    console.log('🔑 Requesting presigned URL:', { filename, contentType, folder });
+    
     const response = await fetch(`${API_GATEWAY_URL}/upload`, {
       method: 'POST',
       headers: {
@@ -46,11 +48,16 @@ async function getPreSignedUrl(
       }),
     });
 
+    console.log('📡 API Gateway response status:', response.status);
+
     if (!response.ok) {
-      throw new Error(`API Gateway error: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ API Gateway error response:', errorText);
+      throw new Error(`API Gateway error ${response.status}: ${errorText}`);
     }
 
     const data: PreSignedUrlResponse = await response.json();
+    console.log('✅ Got presigned URL data:', { success: data.success, hasUploadUrl: !!data.data?.uploadUrl });
 
     if (!data.success || !data.data) {
       throw new Error('Invalid response from API Gateway');

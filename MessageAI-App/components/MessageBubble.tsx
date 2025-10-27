@@ -9,15 +9,18 @@ import { Avatar } from './Avatar';
 import { ImageMessage } from './ImageMessage';
 import { VideoMessage } from './VideoMessage';
 import { VideoPlayer } from './VideoPlayer';
+import { VoiceMessage } from './VoiceMessage';
 import dayjs from 'dayjs';
 import { toDate } from '../utils/dateFormat';
 import { translateMessage, detectLanguage } from '../services/translation.service';
 import { analyzeCulturalContext } from '../services/context.service';
 import { detectSlangAndIdioms } from '../services/slang.service';
+import { transcribeAudio } from '../services/transcription.service';
 import { AIError, CulturalContext, SlangTerm } from '../types/ai.types';
 import { CulturalContextModal } from './CulturalContextModal';
 import SlangExplanationModal from './SlangExplanationModal';
 import { MessageContextMenu } from './MessageContextMenu';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface MessageBubbleProps {
   message: OptimisticMessage;
@@ -36,6 +39,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   autoTranslate = false,
   showCulturalHints = true,
 }) => {
+  const { theme } = useTheme();
   const [showTranslation, setShowTranslation] = useState(false);
   const [translation, setTranslation] = useState<string | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -43,6 +47,11 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
   const [detectedLanguage, setDetectedLanguage] = useState<string | null>(null);
   const [autoTranslateAttempted, setAutoTranslateAttempted] = useState(false);
   const messageIdRef = useRef(message.id);
+
+  // Transcription state (for voice messages)
+  const [transcription, setTranscription] = useState<string | null>(message.transcription || null);
+  const [transcriptionLanguage, setTranscriptionLanguage] = useState<string | null>(message.transcriptionLanguage || null);
+  const [isTranscribing, setIsTranscribing] = useState(false);
 
   // Cultural context state
   const [showCulturalModal, setShowCulturalModal] = useState(false);
@@ -126,7 +135,9 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
     setTranslationError(null);
 
     try {
-      const result = await translateMessage(message.text, userPreferredLanguage, message.id);
+      // Use transcription for voice messages, text for others
+      const textToTranslate = message.type === 'voice' ? (message.transcription || '') : message.text;
+      const result = await translateMessage(textToTranslate, userPreferredLanguage, message.id);
       setTranslation(result.translation);
       setDetectedLanguage(result.detectedLanguage);
       setShowTranslation(true);
@@ -151,7 +162,9 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
     setContextError(null);
 
     try {
-      const context = await analyzeCulturalContext(message.text, detectedLanguage || undefined);
+      // Use transcription for voice messages, text for others
+      const textToAnalyze = message.type === 'voice' ? (message.transcription || '') : message.text;
+      const context = await analyzeCulturalContext(textToAnalyze, detectedLanguage || undefined);
       setCulturalContext(context);
     } catch (error) {
       const errorMessage = (error as AIError).message || 'Failed to analyze cultural context';
@@ -174,13 +187,36 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
     setSlangError(null);
 
     try {
-      const terms = await detectSlangAndIdioms(message.text, detectedLanguage || 'en');
+      // Use transcription for voice messages, text for others
+      const textToAnalyze = message.type === 'voice' ? (message.transcription || '') : message.text;
+      const terms = await detectSlangAndIdioms(textToAnalyze, detectedLanguage || 'en');
       setSlangTerms(terms);
     } catch (error) {
       const errorMessage = (error as AIError).message || 'Failed to detect slang and idioms';
       setSlangError(errorMessage);
     } finally {
       setIsDetectingSlang(false);
+    }
+  };
+
+  const handleTranscribe = async () => {
+    if (!message.media?.cloudUrl) return;
+
+    setIsTranscribing(true);
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const result = await transcribeAudio(message.media.cloudUrl);
+      setTranscription(result.text);
+      setTranscriptionLanguage(result.language || null);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Transcription error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Transcription failed';
+      setTranscription(`⚠️ ${errorMessage}`);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsTranscribing(false);
     }
   };
 
@@ -227,8 +263,27 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
             />
           </View>
           <View style={styles.bubbleWrapper}>
-            {/* Video Message (outside bubble) */}
-            {message.type === 'video' && message.media ? (
+            {/* Voice Message */}
+            {message.type === 'voice' && message.media?.cloudUrl ? (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onLongPress={(event) => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  const { pageX, pageY } = event.nativeEvent;
+                  setMenuPosition({ x: pageX, y: pageY });
+                  setShowContextMenu(true);
+                }}
+              >
+                <VoiceMessage
+                  audioUrl={message.media.cloudUrl}
+                  duration={message.media.duration || 0}
+                  isOwnMessage={isOwnMessage}
+                  transcription={transcription}
+                  transcriptionLanguage={transcriptionLanguage}
+                  messageId={message.id}
+                />
+              </TouchableOpacity>
+            ) : message.type === 'video' && message.media ? (
               <>
                 <VideoMessage
                   videoUri={message.media.cloudUrl || message.media.localUri || ''}
@@ -300,12 +355,14 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                         styles.captionBubble
                       ]}
                     >
-                      <Text style={[styles.text, styles.otherText, styles.captionText]}>
-                        {showTranslation && translation ? translation : message.text}
-                        {showTranslation && detectedLanguage && (
-                          <Text style={styles.translationIndicatorInline}>  🌐</Text>
-                        )}
+                  <Text style={[styles.text, styles.otherText, styles.captionText]}>
+                    {showTranslation && translation ? translation : message.text}
+                    {showTranslation && detectedLanguage && (
+                      <Text style={[styles.languageBadgeInline, { color: theme.textSecondary }]}>
+                        {' '}{detectedLanguage.toUpperCase().substring(0, 2)}
                       </Text>
+                    )}
+                  </Text>
                     </TouchableOpacity>
                   </>
                 )}
@@ -333,7 +390,9 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                   <Text style={[styles.text, styles.otherText]}>
                     {showTranslation && translation ? translation : message.text}
                     {showTranslation && detectedLanguage && (
-                      <Text style={styles.translationIndicatorInline}>  🌐</Text>
+                      <Text style={[styles.languageBadgeInline, { color: theme.textSecondary }]}>
+                        {' '}{detectedLanguage.toUpperCase().substring(0, 2)}
+                      </Text>
                     )}
                   </Text>
 
@@ -351,8 +410,27 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         </View>
       ) : (
         <View style={styles.bubbleWrapper}>
-          {/* Video Message (outside bubble) */}
-          {message.type === 'video' && message.media ? (
+          {/* Voice Message */}
+          {message.type === 'voice' && message.media?.cloudUrl ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onLongPress={(event) => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                const { pageX, pageY } = event.nativeEvent;
+                setMenuPosition({ x: pageX, y: pageY });
+                setShowContextMenu(true);
+              }}
+            >
+              <VoiceMessage
+                audioUrl={message.media.cloudUrl}
+                duration={message.media.duration || 0}
+                isOwnMessage={isOwnMessage}
+                transcription={transcription}
+                transcriptionLanguage={transcriptionLanguage}
+                messageId={message.id}
+              />
+            </TouchableOpacity>
+          ) : message.type === 'video' && message.media ? (
             <>
               <VideoMessage
                 videoUri={message.media.cloudUrl || message.media.localUri || ''}
@@ -427,7 +505,9 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                     <Text style={[styles.text, styles.ownText, styles.captionText]}>
                       {showTranslation && translation ? translation : message.text}
                       {showTranslation && detectedLanguage && (
-                        <Text style={styles.translationIndicatorInline}>  🌐</Text>
+                        <Text style={[styles.languageBadgeInline, { color: 'rgba(255,255,255,0.6)' }]}>
+                          {' '}{detectedLanguage.toUpperCase().substring(0, 2)}
+                        </Text>
                       )}
                     </Text>
                   </TouchableOpacity>
@@ -457,7 +537,11 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
                 <Text style={[styles.text, isOwnMessage ? styles.ownText : styles.otherText]}>
                   {showTranslation && translation ? translation : message.text}
                   {showTranslation && detectedLanguage && (
-                    <Text style={styles.translationIndicatorInline}>  🌐</Text>
+                    <Text style={[styles.languageBadgeInline, { 
+                      color: isOwnMessage ? 'rgba(255,255,255,0.6)' : theme.textSecondary 
+                    }]}>
+                      {' '}{detectedLanguage.toUpperCase().substring(0, 2)}
+                    </Text>
                   )}
                 </Text>
 
@@ -513,6 +597,7 @@ const MessageBubbleComponent: React.FC<MessageBubbleProps> = ({
         onTranslate={handleTranslate}
         onCulturalContext={handleCulturalContext}
         onSlangDetection={handleSlangDetection}
+        onTranscribe={message.type === 'voice' ? handleTranscribe : undefined}
         position={menuPosition}
         isOwnMessage={isOwnMessage}
       />
@@ -684,6 +769,12 @@ const styles = StyleSheet.create({
     color: Colors.errorLight,
     marginTop: Spacing.xs,
     fontStyle: 'italic',
+  },
+  languageBadgeInline: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    opacity: 0.7,
   },
   imageContainer: {
     borderRadius: 12,

@@ -39,6 +39,9 @@ export interface Message {
     mimeType?: string;      // MIME type
     filename?: string;      // Original filename
   };
+  // Voice message transcription
+  transcription?: string;   // Speech-to-text transcription
+  transcriptionLanguage?: string; // Detected language of transcription
 }
 
 /**

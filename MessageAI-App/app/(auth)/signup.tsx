@@ -148,11 +148,15 @@ export default function SignupScreen() {
 
               <View style={styles.form}>
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Display Name</Text>
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>Display Name</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { 
+                      color: theme.textPrimary,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(20, 184, 166, 0.08)',
+                      borderColor: isDark ? 'rgba(20, 184, 166, 0.4)' : 'rgba(20, 184, 166, 0.25)',
+                    }]}
                     placeholder="Your Name"
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={theme.textSecondary}
                     value={displayName}
                     onChangeText={setDisplayName}
                     autoCapitalize="words"
@@ -164,11 +168,15 @@ export default function SignupScreen() {
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Email</Text>
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>Email</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { 
+                      color: theme.textPrimary,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(20, 184, 166, 0.08)',
+                      borderColor: isDark ? 'rgba(20, 184, 166, 0.4)' : 'rgba(20, 184, 166, 0.25)',
+                    }]}
                     placeholder="your@email.com"
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={theme.textSecondary}
                     value={email}
                     onChangeText={setEmail}
                     autoCapitalize="none"
@@ -180,11 +188,15 @@ export default function SignupScreen() {
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Password</Text>
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>Password</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { 
+                      color: theme.textPrimary,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(20, 184, 166, 0.08)',
+                      borderColor: isDark ? 'rgba(20, 184, 166, 0.4)' : 'rgba(20, 184, 166, 0.25)',
+                    }]}
                     placeholder="At least 6 characters"
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={theme.textSecondary}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
@@ -195,11 +207,15 @@ export default function SignupScreen() {
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Text style={styles.label}>Confirm Password</Text>
+                  <Text style={[styles.label, { color: theme.textSecondary }]}>Confirm Password</Text>
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { 
+                      color: theme.textPrimary,
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(20, 184, 166, 0.08)',
+                      borderColor: isDark ? 'rgba(20, 184, 166, 0.4)' : 'rgba(20, 184, 166, 0.25)',
+                    }]}
                     placeholder="Re-enter your password"
-                    placeholderTextColor={Colors.textTertiary}
+                    placeholderTextColor={theme.textSecondary}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry
@@ -225,9 +241,9 @@ export default function SignupScreen() {
 
                 {/* OR Divider */}
                 <View style={styles.dividerContainer}>
-                  <View style={styles.divider} />
-                  <Text style={styles.dividerText}>OR</Text>
-                  <View style={styles.divider} />
+                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
+                  <Text style={[styles.dividerText, { color: theme.textSecondary }]}>OR</Text>
+                  <View style={[styles.divider, { backgroundColor: theme.border }]} />
                 </View>
 
                 {/* Google Sign-In Button */}
@@ -238,10 +254,10 @@ export default function SignupScreen() {
                       backgroundColor: theme.surface,
                       borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#DADCE0'
                     },
-                    (isLoading || !isGoogleReady) && styles.buttonDisabled
+                    isLoading && styles.buttonDisabled
                   ]}
                   onPress={handleGoogleSignIn}
-                  disabled={isLoading || !isGoogleReady}
+                  disabled={isLoading}
                   activeOpacity={0.8}
                 >
                   {googleLoading ? (
@@ -253,7 +269,7 @@ export default function SignupScreen() {
 
                 {/* Login Link */}
                 <View style={styles.loginContainer}>
-                  <Text style={styles.loginText}>Already have an account? </Text>
+                  <Text style={[styles.loginText, { color: theme.textSecondary }]}>Already have an account? </Text>
                   <TouchableOpacity onPress={navigateToLogin} disabled={isLoading}>
                     <Text style={styles.loginLink}>Sign In</Text>
                   </TouchableOpacity>

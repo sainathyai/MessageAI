@@ -18,7 +18,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { OptimisticMessage } from '../../types';
 import { COLORS } from '../../utils/constants';
 import { Colors } from '../../constants';
-import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered, sendImageMessage, sendVideoMessage } from '../../services/message.service';
+import { subscribeToMessages, sendMessageOptimistic, retryMessage, markMessagesAsRead, markMessagesAsDelivered, sendImageMessage, sendVideoMessage, sendVoiceMessage } from '../../services/message.service';
 import { getConversation, markConversationAsRead } from '../../services/conversation.service';
 import { getUserData } from '../../services/auth.service';
 import { MessageBubble } from '../../components/MessageBubble';
@@ -754,6 +754,87 @@ export default function ChatScreen() {
     }
   };
 
+  const handleSendVoice = async (audioUri: string, duration: number) => {
+    if (!user || !id) return;
+
+    try {
+      // Check if online
+      const online = await isOnline();
+
+      if (!online) {
+        ThemedAlert.alert('Offline', 'Voice message upload requires an internet connection. Please try again when online.');
+        return;
+      }
+
+      console.log('🎤 Sending voice message:', {
+        duration,
+      });
+
+      // Create optimistic message for immediate display
+      const optimisticVoiceMessage: OptimisticMessage = {
+        id: `opt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        conversationId: id,
+        text: '🎤 Voice message',
+        senderId: user.uid,
+        senderName: user.displayName,
+        timestamp: new Date(),
+        status: 'sending',
+        type: 'voice',
+        media: {
+          localUri: audioUri,
+          duration: duration,
+          mimeType: 'audio/m4a',
+        },
+        isOptimistic: true,
+      };
+
+      // Add to optimistic messages immediately
+      setOptimisticMessages(prev => [...prev, optimisticVoiceMessage]);
+
+      // Upload to S3 and save to Firestore in background
+      try {
+        await sendVoiceMessage(
+          id,
+          audioUri,
+          user.uid,
+          user.displayName,
+          duration,
+          (progress) => {
+            console.log(`📤 Upload progress: ${progress.percentage}%`);
+            // TODO: Update UI with upload progress
+          }
+        );
+
+        // Remove optimistic message after successful upload
+        setOptimisticMessages(prev => 
+          prev.filter(msg => msg.id !== optimisticVoiceMessage.id)
+        );
+
+        console.log('✅ Voice message sent successfully');
+      } catch (uploadError) {
+        console.error('❌ Voice message upload failed:', uploadError);
+        
+        // Mark optimistic message as failed
+        setOptimisticMessages(prev =>
+          prev.map(msg =>
+            msg.id === optimisticVoiceMessage.id
+              ? { 
+                  ...msg, 
+                  status: 'failed' as const, 
+                  error: uploadError instanceof Error ? uploadError.message : 'Upload failed' 
+                }
+              : msg
+          )
+        );
+
+        ThemedAlert.alert('Upload Failed', 'Failed to upload voice message. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error sending voice message:', error);
+      Alert.alert('Error', 'Failed to send voice message. Please try again.');
+    }
+  };
+
   const handleRetryMessage = async (message: OptimisticMessage) => {
     if (!user || !id) return;
 
@@ -955,6 +1036,7 @@ export default function ChatScreen() {
           onSendImage={handleSendImage}
           onSendImages={handleSendImages}
           onSendVideo={handleSendVideo}
+          onSendVoice={handleSendVoice}
           onTyping={handleTyping} 
         />
         </View>
