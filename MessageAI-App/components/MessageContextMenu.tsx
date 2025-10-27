@@ -17,6 +17,7 @@ interface MessageContextMenuProps {
   onTranslate: () => void;
   onCulturalContext: () => void;
   onSlangDetection: () => void;
+  onTranscribe?: () => void; // Only for voice messages
   position: { x: number; y: number };
   isOwnMessage: boolean;
 }
@@ -27,6 +28,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   onTranslate,
   onCulturalContext,
   onSlangDetection,
+  onTranscribe,
   position,
   isOwnMessage,
 }) => {
@@ -34,7 +36,7 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   const { height: screenHeight } = Dimensions.get('window');
   
   // Calculate menu position (above or below the message)
-  const menuHeight = 180; // Approximate height of menu
+  const menuHeight = 180; // Same height regardless (transcribe replaces translate)
   const showAbove = position.y > screenHeight / 2;
 
   const menuStyle = {
@@ -58,18 +60,38 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
         <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.3)' }]}>
           <TouchableWithoutFeedback>
             <View style={[styles.menu, menuStyle]}>
-              <TouchableOpacity
-                style={styles.menuItem}
-                onPress={() => {
-                  onTranslate();
-                  onClose();
-                }}
-              >
-                <Text style={styles.menuIcon}>🌐</Text>
-                <Text style={[styles.menuText, { color: theme.textPrimary }]}>Translate</Text>
-              </TouchableOpacity>
+              {/* Transcribe - Only for voice messages (replaces Translate) */}
+              {onTranscribe ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      onTranscribe();
+                      onClose();
+                    }}
+                  >
+                    <Text style={styles.menuIcon}>🎯</Text>
+                    <Text style={[styles.menuText, { color: theme.textPrimary }]}>Transcribe</Text>
+                  </TouchableOpacity>
 
-              <View style={[styles.separator, { backgroundColor: theme.border }]} />
+                  <View style={[styles.separator, { backgroundColor: theme.border }]} />
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.menuItem}
+                    onPress={() => {
+                      onTranslate();
+                      onClose();
+                    }}
+                  >
+                    <Text style={styles.menuIcon}>🌐</Text>
+                    <Text style={[styles.menuText, { color: theme.textPrimary }]}>Translate</Text>
+                  </TouchableOpacity>
+
+                  <View style={[styles.separator, { backgroundColor: theme.border }]} />
+                </>
+              )}
 
               <TouchableOpacity
                 style={styles.menuItem}

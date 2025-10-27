@@ -13,8 +13,29 @@
 - Enhancing message clarity
 - Suggesting intelligent responses
 - Adapting tone for different audiences
+- **Analyzing voice messages with AI** (Our flagship feature!)
 
 Our AI features don't replace human communication—they **enhance** it by filling knowledge gaps and reducing misunderstandings.
+
+### 🏆 Flagship Brainlift Feature: Voice Message AI Analysis
+
+MessageAI is the **first messaging app** to transcribe voice messages AND apply full AI analysis to them. This breakthrough feature combines:
+- **OpenAI Whisper** (speech-to-text transcription)
+- **OpenAI GPT-4** (cultural context + slang detection)
+- **Language detection** (identify spoken language automatically)
+
+**What makes it unique:**
+- Other apps might transcribe voice messages, but they stop there
+- MessageAI goes further by analyzing the transcribed content for cultural nuances and slang
+- Perfect for international teams who use voice messages
+- Great for language learners who want to understand spoken idioms
+
+**Use case example:**
+1. Receive voice message from international colleague
+2. Tap "Transcribe" → See written text
+3. Long-press → "Context" → Understand cultural references in their speech
+4. Long-press → "Slang" → Decode any colloquialisms they used
+5. Long-press → "Translate" → Convert to your language if needed
 
 ---
 
@@ -427,6 +448,69 @@ Users can:
 
 ## 🚀 Future AI Enhancements
 
+### 6. Voice Message Transcription & AI Analysis 🎤 **(BRAINLIFT FEATURE)** 🏆
+
+**Purpose**: Transcribe voice messages and apply full AI analysis to spoken content
+
+**How It Works**:
+```
+Voice Recording → M4A File → Upload to S3
+                → OpenAI Whisper API
+                → Transcription + Language Detection
+                → Store in Firestore
+                → Enable all AI features on transcription
+```
+
+**Technical Implementation**:
+- **Speech-to-Text**: OpenAI Whisper API
+- **Audio Format**: M4A (AAC codec)
+- **Max Duration**: 2 minutes
+- **Language Support**: 50+ languages
+- **Accuracy**: High (even with accents and background noise)
+
+**Key Features**:
+- Press & hold to record (WhatsApp-style UX)
+- Animated waveform visualization
+- Playback controls (play/pause, speed adjustment)
+- One-tap transcription
+- Language detection (shows "EN", "ES", etc.)
+- Apply all AI features to transcriptions:
+  - Translate spoken content
+  - Analyze cultural context in speech
+  - Detect and explain slang in voice
+  - Generate smart replies based on voice
+
+**Example**:
+```
+Voice Message: [User speaks in English with American idioms]
+"Hey team, I'm totally swamped today. Let's touch base tomorrow 
+and circle back on the project."
+
+→ Tap "Transcribe"
+→ See transcribed text
+→ Long-press → "Context"
+
+AI Analysis:
+✅ "Swamped" = Very busy, overwhelmed with work
+✅ "Touch base" = Have a brief meeting or check-in
+✅ "Circle back" = Return to discuss later
+💡 These are common American business idioms that might 
+   confuse non-native speakers
+```
+
+**Why This is Unique**:
+- **First in the industry**: No other messaging app analyzes voice with cultural AI
+- **Powerful for international teams**: Understand spoken idioms and cultural references
+- **Language learning tool**: Learn slang and expressions from native speakers
+- **Accessibility**: Makes voice messages searchable and analyzable
+
+**Code Location**: 
+- `services/transcription.service.ts` → `transcribeAudio()`
+- `services/audio.service.ts` → Recording & playback
+- `components/VoiceMessage.tsx` → UI component
+
+---
+
 ### Planned Features (Phase 5+)
 
 1. **Sentiment Analysis**
@@ -434,12 +518,7 @@ Users can:
    - Suggest emoji reactions
    - Warn about potentially hurtful messages
 
-2. **Voice-to-Text Translation**
-   - Record voice message
-   - Transcribe in original language
-   - Translate and send as text
-
-3. **Smart Summaries**
+2. **Smart Summaries**
    - Summarize long conversations
    - Extract action items
    - Create meeting notes

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemedAlert } from '../components/ThemedAlert';
 
 // Finish the web browser session after authentication
 WebBrowser.maybeCompleteAuthSession();
@@ -70,12 +71,20 @@ export const useGoogleSignIn = () => {
 
   const signIn = async () => {
     if (!hasGoogleConfig) {
-      setError('Google Sign-In is not configured. Please use email/password login.');
+      ThemedAlert.alert(
+        'Google Sign-In Not Configured',
+        'Google Sign-In requires additional setup. Please use email/password login instead, or contact support to enable Google Sign-In.',
+        [{ text: 'OK', style: 'default' }]
+      );
       return;
     }
     
     if (!request) {
-      setError('Google Sign-In is not ready');
+      ThemedAlert.alert(
+        'Not Ready',
+        'Google Sign-In is not ready yet. Please try again in a moment.',
+        [{ text: 'OK', style: 'default' }]
+      );
       return;
     }
     

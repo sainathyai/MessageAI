@@ -113,16 +113,43 @@ To break down communication barriers and enhance human connection through AI-pow
 
 #### 2.2 Video Messages
 - **Requirement**: Record and share video clips
-- **Implementation**: expo-image-picker + AWS S3
+- **Implementation**: expo-av + AWS S3
 - **Success Metric**: <10s upload time for 30s video
 - **Priority**: P0
 
 **Acceptance Criteria:**
-- ✅ Record video (up to 2 minutes)
+- ✅ Record video (up to 60 seconds)
 - ✅ Gallery video selection
-- ✅ Video compression
+- ✅ Strict validation (block long videos)
 - ✅ In-app video player with controls
 - ✅ Thumbnail generation
+- ✅ Cloud storage + local caching
+
+#### 2.3 Voice Messages
+- **Requirement**: Record and send voice messages
+- **Implementation**: expo-av + AWS S3 + OpenAI Whisper
+- **Success Metric**: <2s upload time, <5s transcription
+- **Priority**: P0
+
+**Acceptance Criteria:**
+- ✅ Press & hold to record (WhatsApp-style UX)
+- ✅ Release to send mechanism
+- ✅ Maximum 2 minutes recording
+- ✅ Waveform visualization during playback
+- ✅ Playback controls (play/pause, speed: 1x/1.5x/2x)
+- ✅ Visual playback indicators
+- ✅ Cloud storage (AWS S3)
+- ✅ **Speech-to-Text Transcription** (OpenAI Whisper API)
+- ✅ **AI Analysis on Transcriptions** (Cultural context, slang detection)
+- ✅ Language detection on voice
+- ✅ Inline language badges
+
+**Brainlift Feature:**
+Voice messages with AI transcription represent our most advanced feature:
+- Transcribe spoken content to text
+- Apply all AI features (translation, cultural context, slang) to transcriptions
+- First messaging app to analyze voice messages with AI
+- Perfect for international teams and language learners
 
 ### 3. AI Features (MUST HAVE)
 

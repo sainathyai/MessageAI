@@ -18,6 +18,7 @@ import { ImagePicker } from './ImagePicker';
 import { ImagePreview, ImagePreviewItem } from './ImagePreview';
 import { VideoPicker } from './VideoPicker';
 import { VideoPreview } from './VideoPreview';
+import { VoiceRecorder } from './VoiceRecorder';
 import { adjustFormality } from '../services/context.service';
 import { FormalityLevel } from '../types/ai.types';
 import { useTheme } from '../contexts/ThemeContext';
@@ -27,6 +28,7 @@ interface MessageInputProps {
   onSendImage?: (imageUri: string, width: number, height: number, caption?: string) => void;
   onSendImages?: (images: Array<{ uri: string; width: number; height: number }>, caption?: string) => void;
   onSendVideo?: (videoUri: string, duration: number, thumbnailUri: string, width: number, height: number, caption?: string) => void;
+  onSendVoice?: (audioUri: string, duration: number) => Promise<void>;
   onTyping?: (isTyping: boolean) => void;
   disabled?: boolean;
   showFormalityButton?: boolean;
@@ -37,6 +39,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   onSendImage,
   onSendImages,
   onSendVideo,
+  onSendVoice,
   onTyping,
   disabled = false,
   showFormalityButton = true,
@@ -48,6 +51,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [imagePickerSource, setImagePickerSource] = useState<'camera' | 'gallery' | null>(null);
   const [selectedImages, setSelectedImages] = useState<ImagePreviewItem[]>([]);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [videoPickerSource, setVideoPickerSource] = useState<'camera' | 'gallery' | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<{uri: string; duration: number; thumbnail: string; width: number; height: number} | null>(null);
   const [showVideoPreview, setShowVideoPreview] = useState(false);
@@ -107,6 +111,12 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
+    }
+  };
+
+  const handleSendVoice = async (uri: string, duration: number) => {
+    if (onSendVoice && !disabled) {
+      await onSendVoice(uri, duration);
     }
   };
 
@@ -307,21 +317,31 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           onChangeText={handleTextChange}
           multiline
           maxLength={1000}
-          editable={!disabled}
+          editable={!disabled || isRecording}
           onSubmitEditing={handleSend}
           blurOnSubmit={false}
         />
         
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            { backgroundColor: (!text.trim() || disabled) ? theme.border : Colors.primary }
-          ]}
-          onPress={handleSend}
-          disabled={!text.trim() || disabled}
-        >
-          <Text style={styles.sendButtonText}>➤</Text>
-        </TouchableOpacity>
+        {/* Conditional: Voice Recorder or Send Button */}
+        {text.trim() ? (
+          <TouchableOpacity
+            style={[
+              styles.sendButton,
+              { backgroundColor: disabled ? theme.border : Colors.primary }
+            ]}
+            onPress={handleSend}
+            disabled={disabled}
+          >
+            <Text style={styles.sendButtonText}>➤</Text>
+          </TouchableOpacity>
+        ) : (
+          onSendVoice && (
+            <VoiceRecorder
+              onSendVoice={handleSendVoice}
+              onRecordingStateChange={setIsRecording}
+            />
+          )
+        )}
       </View>
 
       {/* Attachment Menu */}
